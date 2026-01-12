@@ -39,12 +39,21 @@ function ProtectedRoute({
     return <Redirect to="/change-password" />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
+  if (allowedRoles && !allowedRoles.includes(user.role as any)) {
     // Redirect to their appropriate home if accessing unauthorized route
     return <Redirect to={user.role === "ADMIN" ? "/admin/home" : "/driver/home"} />;
   }
 
   return <Component />;
+}
+
+// Extract Root Redirector to avoid inline function issues
+function RootRedirector() {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return <div className="min-h-screen bg-background" />;
+  if (!user) return <Redirect to="/login" />;
+  if (user.mustChangePassword) return <Redirect to="/change-password" />;
+  return <Redirect to={user.role === "ADMIN" ? "/admin/home" : "/driver/home"} />;
 }
 
 function Router() {
@@ -53,15 +62,7 @@ function Router() {
       <Route path="/login" component={AuthPage} />
       
       {/* Root redirect */}
-      <Route path="/">
-        {() => {
-           const { user, isLoading } = useAuth();
-           if (isLoading) return <div className="min-h-screen bg-background" />;
-           if (!user) return <Redirect to="/login" />;
-           if (user.mustChangePassword) return <Redirect to="/change-password" />;
-           return <Redirect to={user.role === "ADMIN" ? "/admin/home" : "/driver/home"} />;
-        }}
-      </Route>
+      <Route path="/" component={RootRedirector} />
 
       {/* Protected Routes */}
       <Route path="/admin/home">
