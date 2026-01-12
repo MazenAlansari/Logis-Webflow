@@ -1,0 +1,141 @@
+PHASE 1 — STEP 1 (Next.js fullstack)
+Foundation for a Logistics Driver Operations System
+(Auth, Roles, Secure Login — no public signup)
+
+Business context:
+This application is the foundation of a logistics operations system used by a transportation company.
+The system will be used by:
+- Administrators to manage drivers and system access
+- Drivers to securely access the system and later record their daily trip journeys and stops
+
+In Phase 1, the focus is ONLY on:
+- Secure authentication
+- Role-based access (ADMIN / DRIVER)
+- User management readiness
+- Clean, simple user experience
+
+NO logistics business data (trips, trucks, stops) should be implemented yet.
+This phase must be production-ready and extensible for future logistics modules.
+
+---
+
+Build a production-ready Next.js (App Router) fullstack application with:
+- TypeScript
+- Prisma ORM
+- PostgreSQL (via environment variables; no platform-specific dependencies)
+- Secure password hashing (bcrypt)
+- Session-based authentication using HttpOnly cookies
+  (JWT or server-managed session tokens; do NOT use localStorage)
+- No public registration or signup
+- Only ADMIN users can create other users in later phases
+
+---
+
+Business requirements:
+
+1) User roles:
+   - ADMIN
+   - DRIVER
+
+2) Post-login redirect logic:
+   - If role = ADMIN → redirect to /admin/home
+   - If role = DRIVER → redirect to /driver/home
+
+3) First-login password change enforcement:
+   - Users created by an ADMIN must have mustChangePassword = true
+   - After login, if mustChangePassword = true, force redirect to /change-password
+   - After successful password change:
+     - Set mustChangePassword = false
+     - Redirect user based on role
+
+4) Authorization & access control:
+   - Protect all /admin/* routes → ADMIN only
+   - Protect all /driver/* routes → DRIVER only
+   - Provide a shared /profile route accessible to both roles
+
+5) Minimal and clean UI/UX:
+   - Clean login page at /login
+   - Simple application layout with a top navigation bar:
+       - Left: application name (neutral branding)
+       - Right:
+           - Language toggle placeholder (EN / AR, not functional yet)
+           - User dropdown menu:
+               - Profile
+               - Logout
+   - /admin/home:
+       - Simple welcome card (no business data yet)
+   - /driver/home:
+       - Simple welcome card (no business data yet)
+   - /profile page:
+       - Read-only fields: name, email, role
+       - Optional editable field: phone number
+       - Keep the page minimal and professional
+
+---
+
+Data model (Prisma):
+
+User:
+- id (UUID, primary key)
+- email (unique, required)
+- fullName (required)
+- role (enum: ADMIN, DRIVER)
+- passwordHash
+- isActive (boolean, default true)
+- mustChangePassword (boolean, default true for admin-created users)
+- lastLoginAt (datetime, nullable)
+- createdAt (datetime)
+- updatedAt (datetime)
+
+---
+
+Seeding & initialization:
+- Create an initial ADMIN user using environment variables:
+   - ADMIN_EMAIL
+   - ADMIN_PASSWORD
+   - ADMIN_NAME
+- On first application run:
+   - If no ADMIN user exists, create one automatically
+   - Set mustChangePassword = false for the seeded ADMIN
+
+---
+
+Routes / pages to implement in this phase:
+- /login
+- /logout (POST action)
+- /change-password (authenticated users only)
+- /admin/home (protected)
+- /driver/home (protected)
+- /profile (protected, shared)
+
+---
+
+API endpoints / actions:
+- POST /api/auth/login
+- POST /api/auth/logout
+- POST /api/auth/change-password
+- Authentication & role middleware for route protection
+
+---
+
+Security best practices (mandatory):
+- Validate all inputs (zod or equivalent)
+- Rate-limit login attempts (basic in-memory solution is acceptable for MVP)
+- Use secure cookie flags:
+   - HttpOnly
+   - Secure in production
+   - SameSite=Lax
+- Do not leak user existence (generic login error messages)
+- Prevent inactive users (isActive = false) from logging in
+
+---
+
+Deliverables:
+- Application runs locally in Replit and is portable to any environment
+- Prisma schema, migration, and seed script included
+- No dependency on Replit-only services
+- .env.example file provided
+- Clear README explaining:
+   - Environment variables
+   - Local setup
+   - Database migration
