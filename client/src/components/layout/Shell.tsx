@@ -8,7 +8,8 @@ import {
   Menu,
   ShieldCheck,
   Settings,
-  ChevronDown
+  ChevronDown,
+  Users as UsersIcon
 } from "lucide-react";
 import { useState } from "react";
 import {
@@ -33,6 +34,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     if (user?.role === "ADMIN") {
       return [
         { href: "/admin/home", label: "Dashboard", icon: LayoutDashboard },
+        { href: "/admin/users", label: "Users", icon: UsersIcon },
         { href: "/admin/drivers", label: "Drivers", icon: Truck }, // Placeholder
         { href: "/admin/settings", label: "Settings", icon: Settings }, // Placeholder
       ];

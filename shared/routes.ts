@@ -54,7 +54,95 @@ export const api = {
       },
     },
   },
-  // Future endpoints for User Management (Admin only) can be added here
+  admin: {
+    users: {
+      list: {
+        method: "GET" as const,
+        path: "/api/admin/users",
+        responses: {
+          200: z.array(
+            z.object({
+              id: z.string().uuid(),
+              username: z.string(),
+              fullName: z.string(),
+              role: z.enum(["ADMIN", "DRIVER"]),
+              isActive: z.boolean(),
+              mustChangePassword: z.boolean(),
+              lastLoginAt: z.date().nullable(),
+              createdAt: z.date(),
+            })
+          ),
+          401: errorSchemas.unauthorized,
+          403: errorSchemas.unauthorized,
+        },
+      },
+      create: {
+        method: "POST" as const,
+        path: "/api/admin/users",
+        input: z.object({
+          email: z.string().email(),
+          fullName: z.string().min(2),
+          role: z.enum(["ADMIN", "DRIVER"]).default("DRIVER"),
+          isActive: z.boolean().default(true),
+        }),
+        responses: {
+          201: z.object({
+            id: z.string().uuid(),
+            username: z.string(),
+            fullName: z.string(),
+            role: z.enum(["ADMIN", "DRIVER"]),
+            isActive: z.boolean(),
+            mustChangePassword: z.boolean(),
+            lastLoginAt: z.date().nullable(),
+            createdAt: z.date(),
+            tempPassword: z.string(),
+          }),
+          400: errorSchemas.validation,
+          401: errorSchemas.unauthorized,
+          403: errorSchemas.unauthorized,
+          409: z.object({ message: z.string() }),
+        },
+      },
+      update: {
+        method: "PATCH" as const,
+        path: "/api/admin/users/:id",
+        input: z.object({
+          fullName: z.string().min(2).optional(),
+          role: z.enum(["ADMIN", "DRIVER"]).optional(),
+          isActive: z.boolean().optional(),
+        }),
+        responses: {
+          200: z.object({
+            id: z.string().uuid(),
+            username: z.string(),
+            fullName: z.string(),
+            role: z.enum(["ADMIN", "DRIVER"]),
+            isActive: z.boolean(),
+            mustChangePassword: z.boolean(),
+            lastLoginAt: z.date().nullable(),
+            createdAt: z.date(),
+          }),
+          400: errorSchemas.validation,
+          401: errorSchemas.unauthorized,
+          403: errorSchemas.unauthorized,
+          404: errorSchemas.notFound,
+        },
+      },
+      resetPassword: {
+        method: "POST" as const,
+        path: "/api/admin/users/:id/reset-password",
+        responses: {
+          200: z.object({
+            userId: z.string().uuid(),
+            tempPassword: z.string(),
+          }),
+          401: errorSchemas.unauthorized,
+          403: errorSchemas.unauthorized,
+          404: errorSchemas.notFound,
+        },
+      },
+    },
+  },
 };
 
 // Required helper

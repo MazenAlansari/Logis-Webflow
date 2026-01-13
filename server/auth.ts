@@ -2,11 +2,10 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
-import { scrypt, randomBytes, timingSafeEqual } from "crypto";
-import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
 import bcrypt from "bcryptjs";
+import { getSessionConfig } from "./config/session";
 
 declare global {
   namespace Express {
@@ -15,16 +14,8 @@ declare global {
 }
 
 export function setupAuth(app: Express) {
-  const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || "replit_session_secret",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: app.get("env") === "production",
-      maxAge: 1000 * 60 * 60 * 24, // 1 day
-    },
-    store: storage.sessionStore,
-  };
+  // Get session configuration from config module
+  const sessionSettings = getSessionConfig(app);
 
   if (app.get("env") === "production") {
     app.set("trust proxy", 1);
@@ -38,7 +29,10 @@ export function setupAuth(app: Express) {
     new LocalStrategy(async (username, password, done) => {
       try {
         const user = await storage.getUserByUsername(username);
-        if (!user) {
+        
+        // SECURITY HARDENING: Reject authentication if user not found OR inactive
+        // Generic error message to prevent user enumeration
+        if (!user || !user.isActive) {
           return done(null, false);
         }
         
@@ -58,9 +52,15 @@ export function setupAuth(app: Express) {
     done(null, user.id);
   });
 
+  // SECURITY HARDENING: Safe session rehydration
+  // If user is missing or deactivated, treat as unauthenticated (logout)
   passport.deserializeUser(async (id: string, done) => {
     try {
       const user = await storage.getUser(id);
+      // If user not found or deactivated, don't restore session
+      if (!user || !user.isActive) {
+        return done(null, false);
+      }
       done(null, user);
     } catch (err) {
       done(err);

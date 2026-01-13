@@ -1,12 +1,28 @@
 import "dotenv/config";
-import express, { type Request, Response, NextFunction } from "express";
+import express from "express";
 import { registerRoutes } from "./routes";
 import { setupAuth } from "./auth";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import helmet from "helmet";
+import { validateEnv, env } from "./config/env";
+import { errorHandler } from "./middleware/error.middleware";
 
 const app = express();
 const httpServer = createServer(app);
+
+// SECURITY HARDENING: Helmet security headers with conditional CSP
+// - Production: Full Helmet with strict CSP (maximum security)
+// - Development: Helmet with CSP disabled to allow Vite HMR inline scripts
+// All other security headers (X-Frame-Options, X-Content-Type-Options, etc.) remain active in both modes
+if (process.env.NODE_ENV === "production") {
+  // Production: Enable full Helmet including strict Content Security Policy
+  app.use(helmet());
+} else {
+  // Development: Disable CSP only (allows Vite/React Refresh inline scripts)
+  // Other security headers remain enabled (XSS protection, frame options, etc.)
+  app.use(helmet({ contentSecurityPolicy: false }));
+}
 
 declare module "http" {
   interface IncomingMessage {
@@ -24,7 +40,11 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
-  setupAuth(app);
+// Validate environment variables
+validateEnv();
+
+// Setup authentication
+setupAuth(app);
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -66,13 +86,8 @@ app.use((req, res, next) => {
 (async () => {
   await registerRoutes(httpServer, app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    res.status(status).json({ message });
-    throw err;
-  });
+  // Error handling middleware (must be last)
+  app.use(errorHandler);
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
@@ -88,7 +103,7 @@ app.use((req, res, next) => {
   // Other ports are firewalled. Default to 5000 if not specified.
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || "5000", 10);
+  const port = env.port;
   httpServer.listen(
     {
       port,

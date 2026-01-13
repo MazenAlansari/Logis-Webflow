@@ -1,0 +1,515 @@
+{
+	"info": {
+		"_postman_id": "logistics-api-collection",
+		"name": "Logistics API - Admin & Driver",
+		"description": "Complete API collection for Logistics Webflow application. Includes authentication, admin user management, and driver endpoints.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    console.log('Login successful. User role:', response.role);",
+									"    console.log('Session cookie will be automatically stored by Postman');",
+									"} else {",
+									"    console.log('Login failed:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"admin@logistics.com\",\n  \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "login"]
+						},
+						"description": "Login as admin user. After successful login, Postman automatically captures the session cookie for subsequent requests."
+					},
+					"response": []
+				},
+				{
+					"name": "Login (Driver)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"driver@test.com\",\n  \"password\": \"your-password-here\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "login"]
+						},
+						"description": "Login as driver user. Replace username and password with actual driver credentials."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const user = pm.response.json();",
+									"    pm.environment.set('currentUserId', user.id);",
+									"    pm.environment.set('currentUserRole', user.role);",
+									"    console.log('Current user:', user.fullName, '(' + user.role + ')');",
+									"} else {",
+									"    console.log('Not authenticated:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/user",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "user"]
+						},
+						"description": "Get current authenticated user information. Requires valid session cookie."
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/logout",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "logout"]
+						},
+						"description": "Logout current user. Invalidates session cookie."
+					},
+					"response": []
+				},
+				{
+					"name": "Change Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"currentPassword\": \"current-password-here\",\n  \"newPassword\": \"newPassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/change-password",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "change-password"]
+						},
+						"description": "Change password for current authenticated user. Requires valid session cookie."
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication endpoints available to all users (Admin and Driver)"
+		},
+		{
+			"name": "Admin - User Management",
+			"item": [
+				{
+					"name": "List All Users",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const users = pm.response.json();",
+									"    console.log('Total users:', users.length);",
+									"    users.forEach(user => {",
+									"        console.log('- ' + user.fullName + ' (' + user.role + ') - ' + user.username);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users"]
+						},
+						"description": "Get list of all users. Requires ADMIN role. Returns users sorted by creation date (newest first)."
+					},
+					"response": []
+				},
+				{
+					"name": "Create User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('newUserId', response.id);",
+									"    pm.environment.set('newUserTempPassword', response.tempPassword);",
+									"    console.log('User created successfully!');",
+									"    console.log('User ID:', response.id);",
+									"    console.log('Temporary Password:', response.tempPassword);",
+									"    console.log('⚠️ SAVE THIS PASSWORD - IT WON'T BE RETURNED AGAIN!');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"driver@test.com\",\n  \"fullName\": \"Driver Name\",\n  \"role\": \"DRIVER\",\n  \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users"]
+						},
+						"description": "Create a new user. Requires ADMIN role. Returns temporary password - save it immediately!"
+					},
+					"response": []
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fullName\": \"Updated Driver Name\",\n  \"role\": \"DRIVER\",\n  \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/:userId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users", ":userId"],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "{{newUserId}}",
+									"description": "User UUID from Create User response"
+								}
+							]
+						},
+						"description": "Update user information. Requires ADMIN role. At least one field must be provided. Cannot deactivate yourself."
+					},
+					"response": []
+				},
+				{
+					"name": "Reset User Password",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('resetTempPassword', response.tempPassword);",
+									"    console.log('Password reset successfully!');",
+									"    console.log('New Temporary Password:', response.tempPassword);",
+									"    console.log('⚠️ SAVE THIS PASSWORD - IT WON'T BE RETURNED AGAIN!');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/:userId/reset-password",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users", ":userId", "reset-password"],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "{{newUserId}}",
+									"description": "User UUID from Create User response"
+								}
+							]
+						},
+						"description": "Reset user password. Requires ADMIN role. Generates new temporary password - save it immediately!"
+					},
+					"response": []
+				}
+			],
+			"description": "Admin-only endpoints for user management. Requires ADMIN role."
+		},
+		{
+			"name": "Testing Scenarios",
+			"item": [
+				{
+					"name": "Admin Full Workflow",
+					"item": [
+						{
+							"name": "1. Login as Admin",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"username\": \"admin@logistics.com\",\n  \"password\": \"admin123\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/login",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "login"]
+								}
+							}
+						},
+						{
+							"name": "2. Get Current User",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/user",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "user"]
+								}
+							}
+						},
+						{
+							"name": "3. List All Users",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/users",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "users"]
+								}
+							}
+						},
+						{
+							"name": "4. Create New Driver",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"email\": \"driver-test@example.com\",\n  \"fullName\": \"Test Driver\",\n  \"role\": \"DRIVER\",\n  \"isActive\": true\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/users",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "users"]
+								}
+							}
+						},
+						{
+							"name": "5. Update Created Driver",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"fullName\": \"Updated Test Driver\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/users/:userId",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "users", ":userId"],
+									"variable": [
+										{
+											"key": "userId",
+											"value": "{{newUserId}}"
+										}
+									]
+								}
+							}
+						},
+						{
+							"name": "6. Reset Driver Password",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/users/:userId/reset-password",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "users", ":userId", "reset-password"],
+									"variable": [
+										{
+											"key": "userId",
+											"value": "{{newUserId}}"
+										}
+									]
+								}
+							}
+						},
+						{
+							"name": "7. Logout",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/logout",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "logout"]
+								}
+							}
+						}
+					],
+					"description": "Complete workflow for admin user management"
+				},
+				{
+					"name": "Driver Permission Test",
+					"item": [
+						{
+							"name": "1. Login as Driver",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"username\": \"driver@test.com\",\n  \"password\": \"driver-password\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/login",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "login"]
+								}
+							}
+						},
+						{
+							"name": "2. Try Admin Endpoint (Should Fail)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/users",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "users"]
+								},
+								"description": "This should return 403 Forbidden because driver doesn't have admin access"
+							}
+						},
+						{
+							"name": "3. Access Own Info (Should Succeed)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/user",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "user"]
+								}
+							}
+						}
+					],
+					"description": "Test that drivers cannot access admin endpoints"
+				}
+			],
+			"description": "Pre-configured test scenarios for common workflows"
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5001",
+			"type": "string"
+		},
+		{
+			"key": "newUserId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "newUserTempPassword",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "resetTempPassword",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "currentUserId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "currentUserRole",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
+
