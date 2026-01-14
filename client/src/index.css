@@ -80,3 +80,38 @@ input:-webkit-autofill:active{
     -webkit-box-shadow: 0 0 0 30px white inset !important;
     -webkit-text-fill-color: hsl(var(--foreground)) !important;
 }
+
+/* RTL Support */
+[dir="rtl"] {
+  direction: rtl;
+}
+
+[dir="ltr"] {
+  direction: ltr;
+}
+
+/* RTL-specific adjustments */
+[dir="rtl"] .rtl\:mirror {
+  transform: scaleX(-1);
+}
+
+/* Ensure proper text alignment for RTL */
+[dir="rtl"] {
+  text-align: right;
+}
+
+[dir="ltr"] {
+  text-align: left;
+}
+
+/* RTL spacing adjustments for flex/grid */
+[dir="rtl"] .gap-2,
+[dir="rtl"] .gap-3,
+[dir="rtl"] .gap-4 {
+  /* Tailwind handles gap automatically, but ensure icons align properly */
+}
+
+/* Arabic font support */
+[lang="ar"] {
+  font-family: 'Cairo', 'Segoe UI', 'Tahoma', sans-serif;
+}

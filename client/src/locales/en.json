@@ -1,0 +1,127 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "update": "Update",
+    "search": "Search",
+    "filter": "Filter",
+    "actions": "Actions",
+    "close": "Close",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "username": "Username",
+    "forgotPassword": "Forgot Password?",
+    "rememberMe": "Remember Me",
+    "loginButton": "Sign In",
+    "invalidCredentials": "Invalid email or password",
+    "loginSuccess": "Logged in successfully",
+    "logoutSuccess": "Logged out successfully"
+  },
+  "profile": {
+    "title": "Profile",
+    "fullName": "Full Name",
+    "role": "Role",
+    "email": "Email",
+    "lastLogin": "Last Login",
+    "accountStatus": "Account Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "editProfile": "Edit Profile"
+  },
+  "password": {
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm New Password",
+    "passwordChanged": "Password changed successfully",
+    "incorrectCurrentPassword": "Incorrect current password",
+    "passwordsDoNotMatch": "Passwords do not match",
+    "passwordTooShort": "Password must be at least 8 characters",
+    "mustChangePassword": "You must change your password before continuing"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "users": "Users",
+    "drivers": "Drivers",
+    "settings": "Settings",
+    "profile": "Profile",
+    "logout": "Logout",
+    "home": "Home"
+  },
+  "admin": {
+    "dashboard": {
+      "title": "Admin Dashboard",
+      "welcome": "Welcome to the Admin Dashboard",
+      "description": "Manage your fleet operations, users, and system settings from here."
+    },
+    "users": {
+      "title": "User Management",
+      "subtitle": "Manage system access (Admin creates users; no public registration).",
+      "createUser": "Create User",
+      "editUser": "Edit User",
+      "resetPassword": "Reset Password",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "status": "Status",
+      "lastLogin": "Last Login",
+      "mustChangePassword": "Must Change Password",
+      "createdAt": "Created At",
+      "noUsersFound": "No users found",
+      "searchUsers": "Search users by name or email...",
+      "createUserTitle": "Create New User",
+      "fullName": "Full Name",
+      "userRole": "User Role",
+      "isActive": "Active",
+      "tempPassword": "Temporary Password",
+      "tempPasswordWarning": "Copy now. You won't be able to view it again.",
+      "copyPassword": "Copy Password",
+      "userCreated": "User created successfully",
+      "userUpdated": "User updated successfully",
+      "passwordReset": "Password reset successfully",
+      "cannotDeactivateSelf": "You cannot deactivate your own account",
+      "resetPasswordConfirm": "Reset password for {{name}}?",
+      "confirmDeactivate": "Deactivate {{name}}?",
+      "confirmActivate": "Activate {{name}}?"
+    }
+  },
+  "driver": {
+    "dashboard": {
+      "title": "Driver Dashboard",
+      "welcome": "Welcome to the Driver Dashboard",
+      "description": "View your assigned trips, record journeys, and manage your daily operations."
+    }
+  },
+  "errors": {
+    "notFound": "Page Not Found",
+    "unauthorized": "Unauthorized",
+    "forbidden": "Access Forbidden",
+    "serverError": "Server Error",
+    "networkError": "Network Error",
+    "unknownError": "An unknown error occurred"
+  },
+  "language": {
+    "english": "English",
+    "arabic": "العربية",
+    "selectLanguage": "Select Language",
+    "changeLanguage": "Change Language"
+  }
+}

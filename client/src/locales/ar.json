@@ -1,0 +1,127 @@
+{
+  "common": {
+    "loading": "جارٍ التحميل...",
+    "error": "خطأ",
+    "success": "نجح",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "create": "إنشاء",
+    "update": "تحديث",
+    "search": "بحث",
+    "filter": "تصفية",
+    "actions": "الإجراءات",
+    "close": "إغلاق",
+    "confirm": "تأكيد",
+    "back": "رجوع",
+    "next": "التالي",
+    "submit": "إرسال",
+    "yes": "نعم",
+    "no": "لا"
+  },
+  "auth": {
+    "login": "تسجيل الدخول",
+    "logout": "تسجيل الخروج",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "username": "اسم المستخدم",
+    "forgotPassword": "نسيت كلمة المرور؟",
+    "rememberMe": "تذكرني",
+    "loginButton": "تسجيل الدخول",
+    "invalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+    "loginSuccess": "تم تسجيل الدخول بنجاح",
+    "logoutSuccess": "تم تسجيل الخروج بنجاح"
+  },
+  "profile": {
+    "title": "الملف الشخصي",
+    "fullName": "الاسم الكامل",
+    "role": "الدور",
+    "email": "البريد الإلكتروني",
+    "lastLogin": "آخر تسجيل دخول",
+    "accountStatus": "حالة الحساب",
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "editProfile": "تعديل الملف الشخصي"
+  },
+  "password": {
+    "changePassword": "تغيير كلمة المرور",
+    "currentPassword": "كلمة المرور الحالية",
+    "newPassword": "كلمة المرور الجديدة",
+    "confirmPassword": "تأكيد كلمة المرور الجديدة",
+    "passwordChanged": "تم تغيير كلمة المرور بنجاح",
+    "incorrectCurrentPassword": "كلمة المرور الحالية غير صحيحة",
+    "passwordsDoNotMatch": "كلمات المرور غير متطابقة",
+    "passwordTooShort": "يجب أن تكون كلمة المرور 8 أحرف على الأقل",
+    "mustChangePassword": "يجب عليك تغيير كلمة المرور قبل المتابعة"
+  },
+  "navigation": {
+    "dashboard": "لوحة التحكم",
+    "users": "المستخدمون",
+    "drivers": "السائقون",
+    "settings": "الإعدادات",
+    "profile": "الملف الشخصي",
+    "logout": "تسجيل الخروج",
+    "home": "الرئيسية"
+  },
+  "admin": {
+    "dashboard": {
+      "title": "لوحة تحكم المدير",
+      "welcome": "مرحباً بك في لوحة تحكم المدير",
+      "description": "إدارة عمليات الأسطول والمستخدمين وإعدادات النظام من هنا."
+    },
+    "users": {
+      "title": "إدارة المستخدمين",
+      "subtitle": "إدارة الوصول إلى النظام (يقوم المدير بإنشاء المستخدمين؛ لا يوجد تسجيل عام).",
+      "createUser": "إنشاء مستخدم",
+      "editUser": "تعديل مستخدم",
+      "resetPassword": "إعادة تعيين كلمة المرور",
+      "activate": "تفعيل",
+      "deactivate": "تعطيل",
+      "name": "الاسم",
+      "email": "البريد الإلكتروني",
+      "role": "الدور",
+      "status": "الحالة",
+      "lastLogin": "آخر تسجيل دخول",
+      "mustChangePassword": "يجب تغيير كلمة المرور",
+      "createdAt": "تاريخ الإنشاء",
+      "noUsersFound": "لم يتم العثور على مستخدمين",
+      "searchUsers": "البحث عن المستخدمين بالاسم أو البريد الإلكتروني...",
+      "createUserTitle": "إنشاء مستخدم جديد",
+      "fullName": "الاسم الكامل",
+      "userRole": "دور المستخدم",
+      "isActive": "نشط",
+      "tempPassword": "كلمة المرور المؤقتة",
+      "tempPasswordWarning": "انسخ الآن. لن تتمكن من عرضها مرة أخرى.",
+      "copyPassword": "نسخ كلمة المرور",
+      "userCreated": "تم إنشاء المستخدم بنجاح",
+      "userUpdated": "تم تحديث المستخدم بنجاح",
+      "passwordReset": "تم إعادة تعيين كلمة المرور بنجاح",
+      "cannotDeactivateSelf": "لا يمكنك تعطيل حسابك الخاص",
+      "resetPasswordConfirm": "إعادة تعيين كلمة المرور لـ {{name}}؟",
+      "confirmDeactivate": "تعطيل {{name}}؟",
+      "confirmActivate": "تفعيل {{name}}؟"
+    }
+  },
+  "driver": {
+    "dashboard": {
+      "title": "لوحة تحكم السائق",
+      "welcome": "مرحباً بك في لوحة تحكم السائق",
+      "description": "عرض الرحلات المخصصة لك وتسجيل الرحلات وإدارة عملياتك اليومية."
+    }
+  },
+  "errors": {
+    "notFound": "الصفحة غير موجودة",
+    "unauthorized": "غير مصرح",
+    "forbidden": "الوصول ممنوع",
+    "serverError": "خطأ في الخادم",
+    "networkError": "خطأ في الشبكة",
+    "unknownError": "حدث خطأ غير معروف"
+  },
+  "language": {
+    "english": "English",
+    "arabic": "العربية",
+    "selectLanguage": "اختر اللغة",
+    "changeLanguage": "تغيير اللغة"
+  }
+}

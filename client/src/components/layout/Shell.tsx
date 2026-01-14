@@ -23,25 +23,29 @@ import {
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
+import { useTranslation } from "react-i18next";
+import i18n from "@/lib/i18n";
 
 export default function Shell({ children }: { children: React.ReactNode }) {
   const { user, logoutMutation } = useAuth();
   const [location] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+  const { t } = useTranslation();
 
   // Define navigation based on role
   const getNavItems = () => {
     if (user?.role === "ADMIN") {
       return [
-        { href: "/admin/home", label: "Dashboard", icon: LayoutDashboard },
-        { href: "/admin/users", label: "Users", icon: UsersIcon },
-        { href: "/admin/drivers", label: "Drivers", icon: Truck }, // Placeholder
-        { href: "/admin/settings", label: "Settings", icon: Settings }, // Placeholder
+        { href: "/admin/home", label: t("navigation.dashboard"), icon: LayoutDashboard },
+        { href: "/admin/users", label: t("navigation.users"), icon: UsersIcon },
+        { href: "/admin/drivers", label: t("navigation.drivers"), icon: Truck }, // Placeholder
+        { href: "/admin/settings", label: t("navigation.settings"), icon: Settings }, // Placeholder
       ];
     }
     if (user?.role === "DRIVER") {
       return [
-        { href: "/driver/home", label: "My Tasks", icon: Truck },
+        { href: "/driver/home", label: t("navigation.home"), icon: Truck },
         { href: "/driver/history", label: "History", icon: LayoutDashboard }, // Placeholder
       ];
     }
@@ -112,7 +116,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                   <Menu className="w-5 h-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-64">
+              <SheetContent side={i18n.language === 'ar' ? "right" : "left"} className="p-0 w-64">
                 <NavContent />
               </SheetContent>
             </Sheet>
@@ -120,6 +124,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-4">
+            <LanguageSwitcher />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-2">
@@ -133,13 +138,13 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                 <Link href="/profile">
                   <DropdownMenuItem className="cursor-pointer">
                     <User className="w-4 h-4 mr-2" />
-                    Profile
+                    {t("navigation.profile")}
                   </DropdownMenuItem>
                 </Link>
                 <Link href="/change-password">
                   <DropdownMenuItem className="cursor-pointer">
                     <ShieldCheck className="w-4 h-4 mr-2" />
-                    Security
+                    {t("password.changePassword")}
                   </DropdownMenuItem>
                 </Link>
                 <DropdownMenuSeparator />
@@ -148,7 +153,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                   onClick={() => logoutMutation.mutate()}
                 >
                   <LogOut className="w-4 h-4 mr-2" />
-                  Log out
+                  {t("navigation.logout")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

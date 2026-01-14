@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
+import "@/lib/i18n"; // Initialize i18n
 
 import AuthPage from "@/pages/auth-page";
 import AdminHome from "@/pages/admin-home";
