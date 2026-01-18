@@ -32,6 +32,9 @@ export default function AuthPage() {
     if (user.mustChangePassword) {
       return <Redirect to="/change-password" />;
     }
+    if (!user.emailVerified) {
+      return <Redirect to="/verify-email" />;
+    }
     if (user.role === "ADMIN") {
       return <Redirect to="/admin/home" />;
     }
@@ -39,7 +42,12 @@ export default function AuthPage() {
   }
 
   const onSubmit = (data: LoginRequest) => {
-    loginMutation.mutate(data);
+    // Trim password to remove accidental leading/trailing spaces from copy-paste
+    const trimmedData = {
+      ...data,
+      password: data.password.trim(),
+    };
+    loginMutation.mutate(trimmedData);
   };
 
   return (

@@ -11,6 +11,7 @@ export type SafeUser = {
   role: "ADMIN" | "DRIVER";
   isActive: boolean;
   mustChangePassword: boolean;
+  emailVerified: boolean;
   lastLoginAt: Date | null;
   createdAt: Date;
 };
@@ -30,6 +31,7 @@ export function toSafeUser(user: User): SafeUser {
     role: user.role,
     isActive: user.isActive,
     mustChangePassword: user.mustChangePassword,
+    emailVerified: user.emailVerified,
     lastLoginAt: user.lastLoginAt,
     createdAt: user.createdAt,
   };

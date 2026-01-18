@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import {
   getAllUsers,
+  getUsersPaginated,
   createUser as createUserService,
   updateUser as updateUserService,
   resetUserPassword as resetUserPasswordService,
@@ -9,6 +10,7 @@ import {
   createUserSchema,
   updateUserSchema,
 } from "../services/user.service";
+import { parsePaginationParams } from "../utils/pagination";
 
 /**
  * Admin Users Controllers
@@ -24,6 +26,26 @@ export async function getUsers(_req: Request, res: Response, next: NextFunction)
     const userList = await getAllUsers();
     res.status(200).json(userList);
   } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * GET /api/admin/users/paginated
+ * List users with pagination (admin only)
+ */
+export async function getUsersPaginatedController(req: Request, res: Response, next: NextFunction) {
+  try {
+    const params = parsePaginationParams(req);
+    const result = await getUsersPaginated(params);
+    res.status(200).json(result);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        message: "Invalid pagination parameters",
+        errors: error.errors,
+      });
+    }
     next(error);
   }
 }
@@ -90,6 +112,12 @@ export async function updateUser(req: Request, res: Response, next: NextFunction
       }
       if (error.message === "You cannot deactivate your own account") {
         return res.status(400).json({ message: error.message });
+      }
+      if (error.message === "You cannot change your own email address") {
+        return res.status(400).json({ message: error.message });
+      }
+      if (error.message === "User with this email already exists") {
+        return res.status(409).json({ message: error.message });
       }
     }
     next(error);

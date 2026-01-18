@@ -59,16 +59,27 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
-import { MoreVertical, Plus, Copy, Check, Search, Loader2 } from "lucide-react";
+import { MoreVertical, Plus, Copy, Check, Search, Loader2, Mail, MailCheck } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   fetchUsers,
+  fetchUsersPaginated,
   createUser,
   updateUser,
   resetPassword,
+  sendWelcomeEmail,
   type UserDTO,
   type CreateUserRequest,
   type UpdateUserRequest,
+  type SendWelcomeEmailRequest,
 } from "@/api/adminUsers";
+import { usePagination } from "@/hooks/use-pagination";
+import { PaginationControls } from "@/components/pagination/PaginationControls";
 
 // Form schemas
 const createUserSchema = z.object({
@@ -84,8 +95,13 @@ const updateUserSchema = z.object({
   isActive: z.boolean(),
 });
 
+const changeEmailSchema = z.object({
+  email: z.string().email("Invalid email address"),
+});
+
 type CreateUserForm = z.infer<typeof createUserSchema>;
 type UpdateUserForm = z.infer<typeof updateUserSchema>;
+type ChangeEmailForm = z.infer<typeof changeEmailSchema>;
 
 // Temp Password Dialog Component
 function TempPasswordDialog({
@@ -153,10 +169,12 @@ function CreateUserModal({
   open,
   onOpenChange,
   onSuccess,
+  onUserCreated,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: (tempPassword: string, userName: string) => void;
+  onUserCreated?: (userId: string, tempPassword: string) => void;
 }) {
   const { toast } = useToast();
   const form = useForm<CreateUserForm>({
@@ -177,6 +195,10 @@ function CreateUserModal({
         description: "User has been created successfully.",
       });
       onSuccess(response.tempPassword, response.fullName);
+      // Store temp password for send welcome email feature
+      if (onUserCreated) {
+        onUserCreated(response.id, response.tempPassword);
+      }
       form.reset();
       onOpenChange(false);
     },
@@ -288,6 +310,107 @@ function CreateUserModal({
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
                 Create User
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Change Email Modal Component
+function ChangeEmailModal({
+  open,
+  onOpenChange,
+  user,
+  onSuccess,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  user: UserDTO | null;
+  onSuccess: () => void;
+}) {
+  const { toast } = useToast();
+  const form = useForm<ChangeEmailForm>({
+    resolver: zodResolver(changeEmailSchema),
+    defaultValues: {
+      email: "",
+    },
+  });
+
+  // Update form when user changes
+  useEffect(() => {
+    if (user) {
+      form.reset({
+        email: user.username,
+      });
+    }
+  }, [user, form]);
+
+  const changeEmailMutation = useMutation({
+    mutationFn: (data: UpdateUserRequest) => updateUser(user!.id, data),
+    onSuccess: () => {
+      toast({
+        title: "Email updated",
+        description: "User email has been updated successfully.",
+      });
+      onSuccess();
+      onOpenChange(false);
+    },
+    onError: (error: any) => {
+      const message = error.message || "Failed to update email";
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: ChangeEmailForm) => {
+    changeEmailMutation.mutate({ email: data.email });
+  };
+
+  if (!user) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Change Email</DialogTitle>
+          <DialogDescription>
+            Update email address for {user.fullName}. The user will need to use the new email to log in.
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email Address</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="user@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={changeEmailMutation.isPending}>
+                {changeEmailMutation.isPending && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Update Email
               </Button>
             </DialogFooter>
           </form>
@@ -453,23 +576,33 @@ export default function AdminUsers() {
   const [searchQuery, setSearchQuery] = useState("");
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [changeEmailModalOpen, setChangeEmailModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserDTO | null>(null);
+  const [changeEmailUser, setChangeEmailUser] = useState<UserDTO | null>(null);
   const [resetPasswordUser, setResetPasswordUser] = useState<UserDTO | null>(null);
   const [tempPasswordDialogOpen, setTempPasswordDialogOpen] = useState(false);
   const [tempPassword, setTempPassword] = useState("");
   const [tempPasswordUserName, setTempPasswordUserName] = useState("");
+  // Store temp passwords by userId (from create/reset password responses)
+  const [tempPasswordsByUserId, setTempPasswordsByUserId] = useState<Record<string, string>>({});
 
-  // Fetch users
+  // Fetch users with pagination (default limit: 5 for users)
   const {
     data: users = [],
     isLoading,
     error,
-  } = useQuery({
-    queryKey: ["admin", "users"],
-    queryFn: fetchUsers,
-  });
+    page,
+    setPage,
+    limit,
+    setLimit,
+    pagination,
+  } = usePagination(
+    ["admin", "users"],
+    fetchUsersPaginated,
+    { defaultPage: 1, defaultLimit: 5 }
+  );
 
-  // Filter users by search query
+  // Filter users by search query (client-side for now)
   const filteredUsers = useMemo(() => {
     if (!searchQuery) return users;
     const query = searchQuery.toLowerCase();
@@ -489,6 +622,11 @@ export default function AdminUsers() {
       setTempPasswordUserName(user?.fullName || "User");
       setTempPasswordDialogOpen(true);
       setResetPasswordUser(null);
+      // Store temp password for later use in send welcome email
+      setTempPasswordsByUserId((prev) => ({
+        ...prev,
+        [userId]: response.tempPassword,
+      }));
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
       toast({
         title: "Password reset",
@@ -526,11 +664,58 @@ export default function AdminUsers() {
     },
   });
 
+  // Send welcome email mutation
+  const sendWelcomeEmailMutation = useMutation({
+    mutationFn: (data: SendWelcomeEmailRequest) => sendWelcomeEmail(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      toast({
+        title: "Welcome email sent",
+        description: "Welcome email sent successfully.",
+      });
+    },
+    onError: (error: any) => {
+      const message = error.message || "Failed to send welcome email.";
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleCreateSuccess = (tempPwd: string, userName: string) => {
     setTempPassword(tempPwd);
     setTempPasswordUserName(userName);
     setTempPasswordDialogOpen(true);
     queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+  };
+
+  const handleUserCreated = (userId: string, tempPwd: string) => {
+    // Store temp password for send welcome email feature
+    setTempPasswordsByUserId((prev) => ({
+      ...prev,
+      [userId]: tempPwd,
+    }));
+  };
+
+  const handleSendWelcomeEmail = (user: UserDTO) => {
+    // Check if temp password is available
+    const tempPwd = tempPasswordsByUserId[user.id];
+    if (!tempPwd) {
+      toast({
+        title: "Error",
+        description: "Temp password is not available. Please reset password to resend welcome email.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Send welcome email
+    sendWelcomeEmailMutation.mutate({
+      userId: user.id,
+      tempPassword: tempPwd,
+    });
   };
 
   const handleEditSuccess = () => {
@@ -540,6 +725,15 @@ export default function AdminUsers() {
   const handleEdit = (user: UserDTO) => {
     setSelectedUser(user);
     setEditModalOpen(true);
+  };
+
+  const handleChangeEmail = (user: UserDTO) => {
+    setChangeEmailUser(user);
+    setChangeEmailModalOpen(true);
+  };
+
+  const handleChangeEmailSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
   };
 
   const handleResetPassword = (user: UserDTO) => {
@@ -628,75 +822,164 @@ export default function AdminUsers() {
 
             {/* Users Table */}
             {!isLoading && !error && filteredUsers.length > 0 && (
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Active</TableHead>
-                      <TableHead>Must Change Password</TableHead>
-                      <TableHead>Last Login</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredUsers.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell className="font-medium">{user.fullName}</TableCell>
-                        <TableCell>{user.username}</TableCell>
-                        <TableCell>
-                          <Badge variant={user.role === "ADMIN" ? "default" : "secondary"}>
-                            {user.role}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={user.isActive ? "default" : "secondary"}>
-                            {user.isActive ? "Active" : "Inactive"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={user.mustChangePassword ? "destructive" : "outline"}>
-                            {user.mustChangePassword ? "Yes" : "No"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatDate(user.lastLoginAt)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleEdit(user)}>
-                                Edit user
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleResetPassword(user)}>
-                                Reset password
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleToggleActive(user)}
-                                disabled={isCurrentUser(user.id) && user.isActive}
-                                onSelect={(e) => {
-                                  if (isCurrentUser(user.id) && user.isActive) {
-                                    e.preventDefault();
-                                  }
-                                }}
-                              >
-                                {user.isActive ? "Deactivate" : "Activate"}
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
+              <>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Active</TableHead>
+                        <TableHead>Must Change Password</TableHead>
+                        <TableHead>Last Login</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredUsers.map((user) => (
+                        <TableRow key={user.id}>
+                          <TableCell className="font-medium">{user.fullName}</TableCell>
+                          <TableCell>{user.username}</TableCell>
+                          <TableCell>
+                            <Badge variant={user.role === "ADMIN" ? "default" : "secondary"}>
+                              {user.role}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={user.isActive ? "default" : "secondary"}>
+                              {user.isActive ? "Active" : "Inactive"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={user.mustChangePassword ? "destructive" : "outline"}>
+                              {user.mustChangePassword ? "Yes" : "No"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {formatDate(user.lastLoginAt)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleEdit(user)}>
+                                  Edit user
+                                </DropdownMenuItem>
+                                <TooltipProvider delayDuration={200}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <div className="w-full">
+                                        <DropdownMenuItem 
+                                          onClick={() => handleChangeEmail(user)}
+                                          disabled={isCurrentUser(user.id)}
+                                          onSelect={(e) => {
+                                            if (isCurrentUser(user.id)) {
+                                              e.preventDefault();
+                                            }
+                                          }}
+                                          className="w-full"
+                                        >
+                                          <MailCheck className="mr-2 h-4 w-4" />
+                                          Change Email
+                                        </DropdownMenuItem>
+                                      </div>
+                                    </TooltipTrigger>
+                                    {isCurrentUser(user.id) && (
+                                      <TooltipContent side="left">
+                                        You cannot change your own email address
+                                      </TooltipContent>
+                                    )}
+                                  </Tooltip>
+                                </TooltipProvider>
+                                <DropdownMenuItem onClick={() => handleResetPassword(user)}>
+                                  Reset password
+                                </DropdownMenuItem>
+                                <TooltipProvider delayDuration={200}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <div className="w-full">
+                                        <DropdownMenuItem
+                                          onClick={() => handleSendWelcomeEmail(user)}
+                                          disabled={
+                                            !user.mustChangePassword ||
+                                            !user.isActive ||
+                                            sendWelcomeEmailMutation.isPending ||
+                                            !tempPasswordsByUserId[user.id]
+                                          }
+                                          onSelect={(e) => {
+                                            if (
+                                              !user.mustChangePassword ||
+                                              !user.isActive ||
+                                              !tempPasswordsByUserId[user.id]
+                                            ) {
+                                              e.preventDefault();
+                                            }
+                                          }}
+                                          className="w-full"
+                                        >
+                                          {sendWelcomeEmailMutation.isPending ? (
+                                            <>
+                                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                              Sending...
+                                            </>
+                                          ) : (
+                                            <>
+                                              <Mail className="mr-2 h-4 w-4" />
+                                              Send Welcome Email
+                                            </>
+                                          )}
+                                        </DropdownMenuItem>
+                                      </div>
+                                    </TooltipTrigger>
+                                    {(!user.mustChangePassword || !user.isActive || !tempPasswordsByUserId[user.id]) && (
+                                      <TooltipContent side="left">
+                                        {!user.mustChangePassword
+                                          ? "User already changed password"
+                                          : !user.isActive
+                                          ? "User is inactive"
+                                          : "Temp password is not available. Please reset password to resend welcome email."}
+                                      </TooltipContent>
+                                    )}
+                                  </Tooltip>
+                                </TooltipProvider>
+                                <DropdownMenuItem
+                                  onClick={() => handleToggleActive(user)}
+                                  disabled={isCurrentUser(user.id) && user.isActive}
+                                  onSelect={(e) => {
+                                    if (isCurrentUser(user.id) && user.isActive) {
+                                      e.preventDefault();
+                                    }
+                                  }}
+                                >
+                                  {user.isActive ? "Deactivate" : "Activate"}
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Pagination Controls */}
+                {pagination && (
+                  <PaginationControls
+                    page={page}
+                    totalPages={pagination.totalPages}
+                    total={pagination.total}
+                    limit={limit}
+                    onPageChange={setPage}
+                    onLimitChange={setLimit}
+                    limitOptions={[5, 10, 15, 20]}
+                  />
+                )}
+              </>
             )}
           </CardContent>
         </Card>
@@ -707,6 +990,7 @@ export default function AdminUsers() {
         open={createModalOpen}
         onOpenChange={setCreateModalOpen}
         onSuccess={handleCreateSuccess}
+        onUserCreated={handleUserCreated}
       />
 
       <EditUserModal
@@ -714,6 +998,13 @@ export default function AdminUsers() {
         onOpenChange={setEditModalOpen}
         user={selectedUser}
         onSuccess={handleEditSuccess}
+      />
+
+      <ChangeEmailModal
+        open={changeEmailModalOpen}
+        onOpenChange={setChangeEmailModalOpen}
+        user={changeEmailUser}
+        onSuccess={handleChangeEmailSuccess}
       />
 
       <TempPasswordDialog

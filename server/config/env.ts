@@ -11,6 +11,8 @@ export const env = {
   adminEmail: process.env.ADMIN_EMAIL || "admin@logistics.com",
   adminPassword: process.env.ADMIN_PASSWORD || "admin123",
   adminName: process.env.ADMIN_NAME || "System Admin",
+  novuApiKey: process.env.NOVU_API_KEY,
+  appLoginUrl: process.env.APP_LOGIN_URL || "http://localhost:3000/login",
 } as const;
 
 /**
@@ -27,6 +29,22 @@ export function validateEnv() {
     throw new Error(
       "SESSION_SECRET must be set in production environment. " +
       "Please set SESSION_SECRET environment variable."
+    );
+  }
+
+  // Novu API Key validation
+  if (env.nodeEnv === "production" && !env.novuApiKey) {
+    throw new Error(
+      "NOVU_API_KEY must be set in production environment. " +
+      "Please set NOVU_API_KEY environment variable."
+    );
+  }
+
+  if (env.nodeEnv === "development" && !env.novuApiKey) {
+    console.warn(
+      "⚠️  WARNING: NOVU_API_KEY is not set. " +
+      "Notification endpoints will return 500 errors. " +
+      "Set NOVU_API_KEY in your .env file to enable email notifications."
     );
   }
 }

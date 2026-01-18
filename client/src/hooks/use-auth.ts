@@ -90,9 +90,10 @@ export function useAuth() {
       }
       return api.auth.changePassword.responses[200].parse(await res.json());
     },
-    onSuccess: () => {
-      // Invalidate user so we get the updated mustChangePassword flag if applicable
-      queryClient.invalidateQueries({ queryKey: [api.auth.user.path] });
+    onSuccess: async () => {
+      // Invalidate and refetch user to get updated mustChangePassword and emailVerified flags
+      await queryClient.invalidateQueries({ queryKey: [api.auth.user.path] });
+      await queryClient.refetchQueries({ queryKey: [api.auth.user.path] });
       toast({
         title: "Password Updated",
         description: "Your password has been changed successfully.",

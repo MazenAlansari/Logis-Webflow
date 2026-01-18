@@ -95,12 +95,18 @@ npm install
    ADMIN_EMAIL=admin@logistics.com
    ADMIN_PASSWORD=admin123
    ADMIN_NAME=System Admin
+   
+   # Novu Email Integration (Optional)
+   NOVU_API_KEY=your-novu-api-key-here
+   APP_LOGIN_URL=http://localhost:3000/login
    ```
 
    **Important Notes**:
    - Replace `your_username` and `your_password` with your PostgreSQL credentials
    - Generate a secure `SESSION_SECRET` for production (use: `openssl rand -base64 32`)
    - The `ADMIN_*` variables are used to create the initial admin user on first run
+   - `NOVU_API_KEY`: Required in production for email notifications. Get it from [Novu Cloud Dashboard](https://web.novu.co/)
+   - `APP_LOGIN_URL`: Frontend login URL used in email templates (defaults to `http://localhost:3000/login` in development)
 
 ### Step 5: Set Up Database Schema
 
@@ -210,6 +216,21 @@ On first run, the application automatically creates an admin user using the envi
 | `ADMIN_EMAIL` | No | `admin@logistics.com` | Initial admin email |
 | `ADMIN_PASSWORD` | No | `admin123` | Initial admin password |
 | `ADMIN_NAME` | No | `System Admin` | Initial admin name |
+| `NOVU_API_KEY` | ⚠️ Production | - | Novu Cloud API key for email notifications |
+| `APP_LOGIN_URL` | No | `http://localhost:3000/login` | Frontend login URL used in email templates |
+
+### 📧 Email Notifications (Novu)
+
+The application supports email notifications via [Novu Cloud](https://web.novu.co/) with Amazon SES.
+
+**Setup Instructions:**
+1. Create a Novu Cloud account at [web.novu.co](https://web.novu.co/)
+2. Configure Amazon SES provider in Novu Cloud dashboard
+3. Create a workflow (e.g., "welcome-user") and test it from Novu UI
+4. Get your API key from Novu Cloud settings
+5. Add `NOVU_API_KEY` to your `.env` file
+
+**Note:** In development, if `NOVU_API_KEY` is missing, the server will warn but continue running. Notification endpoints will return 500 errors. In production, `NOVU_API_KEY` is required and the server will fail to start if missing.
 
 ## 📚 Additional Resources
 

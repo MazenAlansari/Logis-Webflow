@@ -13,6 +13,7 @@ import AdminUsers from "@/pages/admin-users";
 import DriverHome from "@/pages/driver-home";
 import Profile from "@/pages/profile";
 import ChangePassword from "@/pages/change-password";
+import VerifyEmail from "@/pages/verify-email";
 import NotFound from "@/pages/not-found";
 
 // Protected Route Component
@@ -41,6 +42,11 @@ function ProtectedRoute({
     return <Redirect to="/change-password" />;
   }
 
+  // Block access if email is not verified (stricter approach)
+  if (!user.emailVerified && window.location.pathname !== "/verify-email" && window.location.pathname !== "/change-password") {
+    return <Redirect to="/verify-email" />;
+  }
+
   if (allowedRoles && !allowedRoles.includes(user.role as any)) {
     // Redirect to their appropriate home if accessing unauthorized route
     return <Redirect to={user.role === "ADMIN" ? "/admin/home" : "/driver/home"} />;
@@ -55,6 +61,7 @@ function RootRedirector() {
   if (isLoading) return <div className="min-h-screen bg-background" />;
   if (!user) return <Redirect to="/login" />;
   if (user.mustChangePassword) return <Redirect to="/change-password" />;
+  if (!user.emailVerified) return <Redirect to="/verify-email" />;
   return <Redirect to={user.role === "ADMIN" ? "/admin/home" : "/driver/home"} />;
 }
 
@@ -83,6 +90,10 @@ function Router() {
       
       <Route path="/change-password">
         <ProtectedRoute component={ChangePassword} />
+      </Route>
+      
+      <Route path="/verify-email">
+        <ProtectedRoute component={VerifyEmail} />
       </Route>
 
       <Route component={NotFound} />

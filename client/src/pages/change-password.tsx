@@ -32,10 +32,10 @@ export default function ChangePassword() {
     return <Redirect to="/login" />;
   }
 
-  // If user successfully changed password and no longer needs to, redirect back home
-  if (changePasswordMutation.isSuccess && !user.mustChangePassword) {
-    return user.role === "ADMIN" ? <Redirect to="/admin/home" /> : <Redirect to="/driver/home" />;
-  }
+  // After password change: redirect based on verification status
+  // This check runs after mutation success and user query has been refetched
+  // Note: user object may still be stale, but the ProtectedRoute will handle the redirect
+  // based on the actual user state after refetch
 
   const onSubmit = (data: ChangePasswordRequest) => {
     changePasswordMutation.mutate(data);

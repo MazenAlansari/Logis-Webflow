@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { insertUserSchema, users, loginSchema, changePasswordSchema } from "./schema";
+import { createPaginatedResponseSchema, paginationMetaSchema } from "./types/pagination";
 
 export const errorSchemas = {
   validation: z.object({
@@ -53,6 +54,29 @@ export const api = {
         401: errorSchemas.unauthorized,
       },
     },
+    verifyEmail: {
+      method: "POST" as const,
+      path: "/api/auth/verify-email",
+      responses: {
+        200: z.object({
+          success: z.boolean(),
+          message: z.string(),
+        }),
+        400: errorSchemas.validation,
+      },
+    },
+    resendVerificationEmail: {
+      method: "POST" as const,
+      path: "/api/auth/resend-verification-email",
+      responses: {
+        200: z.object({
+          success: z.boolean(),
+          message: z.string(),
+        }),
+        400: errorSchemas.validation,
+        401: errorSchemas.unauthorized,
+      },
+    },
   },
   admin: {
     users: {
@@ -68,10 +92,33 @@ export const api = {
               role: z.enum(["ADMIN", "DRIVER"]),
               isActive: z.boolean(),
               mustChangePassword: z.boolean(),
-              lastLoginAt: z.date().nullable(),
-              createdAt: z.date(),
+              emailVerified: z.boolean(),
+              lastLoginAt: z.coerce.date().nullable(),
+              createdAt: z.coerce.date(),
             })
           ),
+          401: errorSchemas.unauthorized,
+          403: errorSchemas.unauthorized,
+        },
+      },
+      listPaginated: {
+        method: "GET" as const,
+        path: "/api/admin/users/paginated",
+        responses: {
+          200: createPaginatedResponseSchema(
+            z.object({
+              id: z.string().uuid(),
+              username: z.string(),
+              fullName: z.string(),
+              role: z.enum(["ADMIN", "DRIVER"]),
+              isActive: z.boolean(),
+              mustChangePassword: z.boolean(),
+              emailVerified: z.boolean(),
+              lastLoginAt: z.coerce.date().nullable(),
+              createdAt: z.coerce.date(),
+            })
+          ),
+          400: errorSchemas.validation,
           401: errorSchemas.unauthorized,
           403: errorSchemas.unauthorized,
         },
@@ -93,8 +140,9 @@ export const api = {
             role: z.enum(["ADMIN", "DRIVER"]),
             isActive: z.boolean(),
             mustChangePassword: z.boolean(),
-            lastLoginAt: z.date().nullable(),
-            createdAt: z.date(),
+            emailVerified: z.boolean(),
+            lastLoginAt: z.coerce.date().nullable(),
+            createdAt: z.coerce.date(),
             tempPassword: z.string(),
           }),
           400: errorSchemas.validation,
@@ -110,6 +158,7 @@ export const api = {
           fullName: z.string().min(2).optional(),
           role: z.enum(["ADMIN", "DRIVER"]).optional(),
           isActive: z.boolean().optional(),
+          email: z.string().email().optional(),
         }),
         responses: {
           200: z.object({
@@ -118,10 +167,11 @@ export const api = {
             fullName: z.string(),
             role: z.enum(["ADMIN", "DRIVER"]),
             isActive: z.boolean(),
-            mustChangePassword: z.boolean(),
-            lastLoginAt: z.date().nullable(),
-            createdAt: z.date(),
-          }),
+              mustChangePassword: z.boolean(),
+              emailVerified: z.boolean(),
+              lastLoginAt: z.coerce.date().nullable(),
+              createdAt: z.coerce.date(),
+            }),
           400: errorSchemas.validation,
           401: errorSchemas.unauthorized,
           403: errorSchemas.unauthorized,
@@ -139,6 +189,26 @@ export const api = {
           401: errorSchemas.unauthorized,
           403: errorSchemas.unauthorized,
           404: errorSchemas.notFound,
+        },
+      },
+    },
+    notifications: {
+      sendWelcome: {
+        method: "POST" as const,
+        path: "/api/admin/notifications/send-welcome",
+        input: z.object({
+          userId: z.string().uuid(),
+          tempPassword: z.string().min(1),
+        }),
+        responses: {
+          200: z.object({
+            ok: z.boolean(),
+          }),
+          400: errorSchemas.validation,
+          401: errorSchemas.unauthorized,
+          403: errorSchemas.unauthorized,
+          404: errorSchemas.notFound,
+          500: errorSchemas.internal,
         },
       },
     },
