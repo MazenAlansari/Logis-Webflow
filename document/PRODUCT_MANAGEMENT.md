@@ -1,10 +1,10 @@
 # Product Management Document
 ## Logistics Webflow - Fleet Management Platform
 
-**Document Version:** 1.0  
+**Document Version:** 1.1  
 **Last Updated:** January 2025  
 **Product Manager:** [To be assigned]  
-**Status:** Phase 1 - Foundation Complete
+**Status:** Phase 1 - Foundation Complete (Enhanced Security & Pagination)
 
 ---
 
@@ -61,6 +61,9 @@ To provide a comprehensive, secure, and efficient internal platform for managing
 - ✅ Establish secure authentication foundation
 - ✅ Implement role-based access control
 - ✅ Create user management system for administrators
+- ✅ Implement email verification system
+- ✅ Add pagination system for scalable list management
+- ✅ Integrate email notifications (Novu)
 - ✅ Ensure production-ready security standards
 - ✅ Build extensible architecture for future features
 
@@ -130,23 +133,34 @@ To provide a comprehensive, secure, and efficient internal platform for managing
 - ✅ Password hashing (bcrypt)
 - ✅ Role-based access control (ADMIN/DRIVER)
 - ✅ Password change enforcement for new users
-- ✅ Rate limiting on login endpoints
+- ✅ Email verification system (token-based, 24-hour expiration)
+- ✅ Email verification enforcement (users must verify before accessing system)
+- ✅ Email change verification (admin email changes require re-verification)
+- ✅ Verification token rate limiting (max 3 resends per hour)
+- ✅ Password trimming on login (prevents accidental space characters)
+- ✅ Rate limiting on login endpoints (10 attempts per 15 minutes)
 - ✅ Security headers (Helmet.js)
 - ✅ Inactive user prevention
 
 #### User Management (Admin Only)
 - ✅ Create new users (ADMIN or DRIVER roles)
-- ✅ List all system users
-- ✅ Update user information (name, role, active status)
+- ✅ List all system users with pagination (5, 10, 15, 20 items per page)
+- ✅ Update user information (name, role, active status, email)
+- ✅ Change user email addresses
 - ✅ Reset user passwords (with temporary password generation)
+- ✅ Send welcome emails via Novu integration
 - ✅ Activate/Deactivate users
 - ✅ Prevent self-deactivation (admin cannot deactivate themselves)
+- ✅ Prevent self-email-change (admin cannot change own email)
 
 #### User Profile
 - ✅ View profile information
 - ✅ Change password
 - ✅ View role and account status
+- ✅ View email verification status
 - ✅ View last login information
+- ✅ Verify email address (with token from email)
+- ✅ Resend verification email (rate limited)
 
 #### Navigation & UI
 - ✅ Role-based navigation menus
@@ -154,6 +168,9 @@ To provide a comprehensive, secure, and efficient internal platform for managing
 - ✅ Driver dashboard
 - ✅ Responsive design
 - ✅ Modern, clean UI (Tailwind CSS + shadcn/ui)
+- ✅ Pagination controls with configurable page size
+- ✅ Client-side search and filtering
+- ✅ Email verification page with auto-verification
 
 ---
 
@@ -235,6 +252,38 @@ To provide a comprehensive, secure, and efficient internal platform for managing
 
 ---
 
+#### US-3A: Email Verification
+**As a** new user or user with changed email  
+**I want to** verify my email address  
+**So that** I can access the system and secure my account
+
+**Acceptance Criteria:**
+- User receives verification email with secure token
+- Verification token expires after 24 hours
+- User can verify via email link or manual token entry
+- User cannot access system features until email is verified
+- Verification can be resent (max 3 times per hour)
+- Token is single-use (invalidated after verification)
+
+**Priority:** P0 (Critical)
+
+---
+
+#### US-3B: Resend Verification Email
+**As a** user with unverified email  
+**I want to** resend the verification email  
+**So that** I can verify my email if the original email was missed
+
+**Acceptance Criteria:**
+- User can request verification email resend
+- System enforces rate limit (max 3 per hour per user)
+- New token is generated with 24-hour expiration
+- Old tokens remain valid until expiration
+
+**Priority:** P1 (High)
+
+---
+
 ### Admin User Management Stories
 
 #### US-4: Create User
@@ -274,12 +323,29 @@ To provide a comprehensive, secure, and efficient internal platform for managing
 **So that** I can maintain accurate user data
 
 **Acceptance Criteria:**
-- Admin can update user name, role, and active status
+- Admin can update user name, role, active status, and email
 - Admin cannot deactivate themselves
+- Admin cannot change their own email address
+- Email changes require user to re-verify email
 - Changes are saved immediately
 - User receives updated information on next login
 
 **Priority:** P1 (High)
+
+---
+
+#### US-7A: Send Welcome Email
+**As an** administrator  
+**I want to** send welcome emails to new users  
+**So that** users receive credentials and setup instructions
+
+**Acceptance Criteria:**
+- Admin can send welcome email after user creation
+- Email includes temporary password and login instructions
+- Email is sent via Novu integration
+- Sending email is non-blocking (user creation succeeds even if email fails)
+
+**Priority:** P2 (Medium)
 
 ---
 
@@ -332,7 +398,7 @@ To provide a comprehensive, secure, and efficient internal platform for managing
 10. Admin shares temporary password with new user
 ```
 
-### Flow 2: Driver First Login
+### Flow 2: Driver First Login & Email Verification
 
 ```
 1. Driver receives credentials from admin
@@ -343,7 +409,13 @@ To provide a comprehensive, secure, and efficient internal platform for managing
 6. Driver enters new password (twice for confirmation)
 7. System validates and updates password
 8. System sets mustChangePassword = false
-9. Driver redirected to /driver/home
+9. System checks emailVerified status
+10. If emailVerified = false:
+    a. Driver redirected to /verify-email
+    b. Driver receives verification email automatically
+    c. Driver clicks link in email or enters token manually
+    d. System verifies token and sets emailVerified = true
+11. Driver redirected to /driver/home
 ```
 
 ### Flow 3: Driver Daily Access
@@ -371,6 +443,39 @@ To provide a comprehensive, secure, and efficient internal platform for managing
 7. Admin shares password with user
 8. User logs in with temporary password
 9. User is forced to change password
+```
+
+### Flow 5: Admin Email Change for User
+
+```
+1. Admin logs in
+2. Admin navigates to /admin/users
+3. Admin finds user and clicks "Change Email"
+4. Admin enters new email address
+5. System validates email uniqueness
+6. System updates email and sets emailVerified = false
+7. System generates verification token
+8. Verification email sent to new address
+9. User receives verification email
+10. User verifies email via link/token
+11. System sets emailVerified = true
+12. User can now access system with new email
+```
+
+### Flow 6: User Resend Verification Email
+
+```
+1. User logs in but has unverified email
+2. User redirected to /verify-email page
+3. User clicks "Resend Verification Email"
+4. System checks rate limit (max 3 per hour)
+5. If within limit:
+   a. System generates new token (24-hour expiration)
+   b. System sends verification email
+   c. User receives new email with token
+6. If rate limit exceeded:
+   a. System shows error message
+   b. User must wait before retrying
 ```
 
 ---
@@ -437,8 +542,21 @@ Pages → Components → Hooks → API Client → Backend
   role: enum ['ADMIN', 'DRIVER']
   isActive: boolean (default: true)
   mustChangePassword: boolean (default: true)
+  emailVerified: boolean (default: false)
   lastLoginAt: timestamp (nullable)
   createdAt: timestamp
+}
+```
+
+#### Email Verification Tokens Table
+```typescript
+{
+  id: UUID (Primary Key)
+  userId: UUID (Foreign Key -> users.id, CASCADE delete)
+  token: string (Unique, secure random token)
+  expiresAt: timestamp (24 hours from creation)
+  createdAt: timestamp
+  verifiedAt: timestamp (nullable, set when token is used)
 }
 ```
 
@@ -455,6 +573,11 @@ Pages → Components → Hooks → API Client → Backend
 - ✅ Secure cookies in production (HTTPS only)
 - ✅ SameSite cookie policy (CSRF protection)
 - ✅ Session expiration (1 day default)
+- ✅ Email verification system (token-based)
+- ✅ Verification token expiration (24 hours)
+- ✅ Verification token single-use enforcement
+- ✅ Password trimming on frontend (prevents copy-paste issues)
+- ✅ Email change verification (prevents unauthorized email changes)
 
 #### Authorization Security
 - ✅ Role-based access control (RBAC)
@@ -471,6 +594,8 @@ Pages → Components → Hooks → API Client → Backend
 #### Rate Limiting
 - ✅ Login endpoint rate limiting (10 attempts per 15 minutes)
 - ✅ Prevents brute force attacks
+- ✅ Email verification resend limiting (max 3 per hour per user)
+- ✅ Prevents verification email abuse
 
 #### Security Headers
 - ✅ Helmet.js for security headers
@@ -480,15 +605,21 @@ Pages → Components → Hooks → API Client → Backend
 
 #### Data Protection
 - ✅ Password hashes never returned in API responses
+- ✅ Temporary passwords never stored in database
+- ✅ Verification tokens stored securely with expiration
 - ✅ Safe user objects (whitelist approach)
 - ✅ No sensitive data in logs
 - ✅ Generic error messages (prevents user enumeration)
+- ✅ Email verification tokens cleared after use
 
 ### Compliance Considerations
 - **Data Privacy:** User data is stored securely
 - **Access Control:** Strict role-based access
+- **Email Verification:** Enforced email verification for account access
 - **Audit Trail:** Session management and login tracking
 - **Password Policy:** Enforced password changes for new users
+- **Token Security:** Time-limited verification tokens with single-use enforcement
+- **Rate Limiting:** Protection against abuse and brute force attacks
 
 ---
 
@@ -553,12 +684,62 @@ All endpoints (except login) require authentication via session cookie.
   }
   ```
 
+**POST /api/auth/verify-email**
+- **Description:** Verify email address using token
+- **Auth Required:** No (token-based verification)
+- **Request Body:**
+  ```json
+  {
+    "token": "verification-token-string"
+  }
+  ```
+- **Response (200):**
+  ```json
+  {
+    "success": true,
+    "message": "Email verified successfully"
+  }
+  ```
+
+**POST /api/auth/resend-verification-email**
+- **Description:** Resend verification email (rate limited)
+- **Auth Required:** Yes
+- **Rate Limited:** Yes (max 3 per hour)
+- **Response (200):**
+  ```json
+  {
+    "success": true,
+    "message": "Verification email sent"
+  }
+  ```
+
 #### Admin User Management Endpoints
 
 **GET /api/admin/users**
 - **Description:** List all users
 - **Auth Required:** Yes (ADMIN only)
 - **Response (200):** Array of user objects
+
+**GET /api/admin/users/paginated**
+- **Description:** List users with pagination
+- **Auth Required:** Yes (ADMIN only)
+- **Query Parameters:**
+  - `page` (number, default: 1)
+  - `limit` (number, default: 20, max: 100)
+  - `sortBy` (string, optional, default: "createdAt")
+  - `sortOrder` (string, "asc" | "desc", default: "desc")
+- **Response (200):**
+  ```json
+  {
+    "data": [/* array of user objects */],
+    "pagination": {
+      "page": 1,
+      "limit": 5,
+      "total": 50,
+      "totalPages": 10
+    }
+  }
+  ```
 
 **POST /api/admin/users**
 - **Description:** Create new user
@@ -578,6 +759,37 @@ All endpoints (except login) require authentication via session cookie.
 - **Description:** Update user
 - **Auth Required:** Yes (ADMIN only)
 - **Request Body:** Partial user object (at least one field required)
+  ```json
+  {
+    "fullName": "Updated Name",
+    "role": "DRIVER",
+    "isActive": true,
+    "email": "newemail@example.com"
+  }
+  ```
+- **Note:** Email changes trigger email verification requirement
+
+**POST /api/admin/users/:id/reset-password**
+- **Description:** Reset user password
+- **Auth Required:** Yes (ADMIN only)
+- **Response (200):** `{ userId, tempPassword }`
+
+**POST /api/admin/notifications/send-welcome**
+- **Description:** Send welcome email to user
+- **Auth Required:** Yes (ADMIN only)
+- **Request Body:**
+  ```json
+  {
+    "userId": "uuid",
+    "tempPassword": "temporary-password"
+  }
+  ```
+- **Response (200):**
+  ```json
+  {
+    "ok": true
+  }
+  ```
 
 **POST /api/admin/users/:id/reset-password**
 - **Description:** Reset user password
@@ -694,6 +906,9 @@ See [POSTMAN_API_GUIDE.md](./POSTMAN_API_GUIDE.md) for complete API testing docu
 - **Zero security breaches** - Target: 100% achievement
 - **Failed login attempts** - Monitor for anomalies
 - **Password reset frequency** - Track user support needs
+- **Email verification rate** - Percentage of users with verified emails
+- **Verification email delivery rate** - Monitor email service reliability
+- **Token expiration rate** - Track unverified accounts
 
 ### Performance Metrics
 - **API response time** - Target: < 200ms (p95)
@@ -771,6 +986,7 @@ The organization needs a secure, scalable internal platform to:
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0 | January 2025 | Initial | Created initial PM document |
+| 1.1 | January 2025 | Update | Added email verification system, pagination, enhanced security features, Novu integration |
 
 ---
 

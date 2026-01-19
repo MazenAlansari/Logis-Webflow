@@ -77,6 +77,39 @@ export const api = {
         401: errorSchemas.unauthorized,
       },
     },
+    loginMobile: {
+      method: "POST" as const,
+      path: "/api/auth/login-mobile",
+      input: loginSchema,
+      responses: {
+        200: z.object({
+          token: z.string(),
+          user: z.custom<typeof users.$inferSelect>(),
+        }),
+        401: errorSchemas.unauthorized,
+        500: errorSchemas.internal,
+      },
+    },
+    logoutMobile: {
+      method: "POST" as const,
+      path: "/api/auth/logout-mobile",
+      responses: {
+        200: z.object({
+          message: z.string(),
+        }),
+        400: errorSchemas.validation,
+      },
+    },
+  },
+  driver: {
+    profile: {
+      method: "GET" as const,
+      path: "/api/driver/profile",
+      responses: {
+        200: z.custom<typeof users.$inferSelect>(),
+        401: errorSchemas.unauthorized,
+      },
+    },
   },
   admin: {
     users: {

@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { api } from "@shared/routes";
-import { login, logout, getCurrentUser, changePassword } from "../controllers/auth.controller";
+import { login, logout, getCurrentUser, changePassword, loginMobile, logoutMobile } from "../controllers/auth.controller";
 import { verifyEmail, resendVerification } from "../controllers/emailVerification.controller";
 import { requireAuth } from "../middleware/auth.middleware";
 import { loginRateLimiter } from "../middleware/rateLimit.middleware";
@@ -17,6 +17,12 @@ export function registerAuthRoutes(app: Express) {
   app.post(api.auth.logout.path, logout);
   app.get(api.auth.user.path, requireAuth, getCurrentUser);
   app.post(api.auth.changePassword.path, requireAuth, changePassword);
+  
+  // Mobile authentication (JWT-based)
+  // Uses same Passport validation as web login, but returns JWT token instead of session
+  app.post(api.auth.loginMobile.path, loginRateLimiter, loginMobile);
+  // Mobile logout - invalidates JWT token
+  app.post(api.auth.logoutMobile.path, logoutMobile);
   
   // Email verification endpoints
   app.post(api.auth.verifyEmail.path, verifyEmail); // Can be used with or without auth (link click)
