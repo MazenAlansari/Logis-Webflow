@@ -89,6 +89,20 @@ app.use((req, res, next) => {
   // Error handling middleware (must be last)
   app.use(errorHandler);
 
+  // API 404 handler: Return JSON 404 for unmatched API routes
+  // This prevents Vite from serving HTML for API errors
+  // Must be placed after routes but before Vite/static serving
+  app.use((req, res, next) => {
+    // If it's an API request but no route matched, return JSON 404
+    if (req.path.startsWith("/api/")) {
+      return res.status(404).json({
+        message: `API route not found: ${req.method} ${req.path}`,
+      });
+    }
+    // Otherwise, let it continue to Vite (frontend routes)
+    next();
+  });
+
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes

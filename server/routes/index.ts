@@ -3,6 +3,7 @@ import type { Server } from "http";
 import { registerAuthRoutes } from "./auth.routes";
 import { registerAdminUserRoutes } from "./adminUsers.routes";
 import { registerAdminNotificationRoutes } from "./adminNotifications.routes";
+import { registerDriverRoutes } from "./driver.routes";
 import { seedAdmin } from "../scripts/seed";
 
 /**
@@ -20,6 +21,7 @@ export async function registerRoutes(
   registerAuthRoutes(app);
   registerAdminUserRoutes(app);
   registerAdminNotificationRoutes(app);
+  registerDriverRoutes(app);
 
   return httpServer;
 }

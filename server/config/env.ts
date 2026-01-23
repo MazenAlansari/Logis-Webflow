@@ -13,6 +13,8 @@ export const env = {
   adminName: process.env.ADMIN_NAME || "System Admin",
   novuApiKey: process.env.NOVU_API_KEY,
   appLoginUrl: process.env.APP_LOGIN_URL || "http://localhost:3000/login",
+  jwtSecret: process.env.JWT_SECRET,
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
 } as const;
 
 /**
@@ -45,6 +47,22 @@ export function validateEnv() {
       "⚠️  WARNING: NOVU_API_KEY is not set. " +
       "Notification endpoints will return 500 errors. " +
       "Set NOVU_API_KEY in your .env file to enable email notifications."
+    );
+  }
+
+  // JWT Secret validation
+  if (env.nodeEnv === "production" && !env.jwtSecret) {
+    throw new Error(
+      "JWT_SECRET must be set in production environment. " +
+      "Please set JWT_SECRET environment variable."
+    );
+  }
+
+  if (env.nodeEnv === "development" && !env.jwtSecret) {
+    console.warn(
+      "⚠️  WARNING: JWT_SECRET is not set. " +
+      "Mobile authentication endpoints will return 500 errors. " +
+      "Set JWT_SECRET in your .env file to enable JWT authentication."
     );
   }
 }
