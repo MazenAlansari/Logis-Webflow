@@ -56,3 +56,95 @@ export const changePasswordSchema = z.object({
 
 export type LoginRequest = z.infer<typeof loginSchema>;
 export type ChangePasswordRequest = z.infer<typeof changePasswordSchema>;
+
+// Organization Type Enum
+export const OrganizationType = {
+  COMPANY: "COMPANY",
+  PARTNER: "PARTNER",
+} as const;
+
+export type OrganizationTypeType =
+  (typeof OrganizationType)[keyof typeof OrganizationType];
+
+// Organizations Table
+export const organizations = pgTable("organizations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  nameEn: text("name_en").notNull(), // English name
+  nameAr: text("name_ar").notNull(), // Arabic name
+  type: text("type", { enum: ["COMPANY", "PARTNER"] }).notNull(),
+  taxId: text("tax_id"), // Tax ID (nullable)
+  registrationNumber: text("registration_number"), // Registration number (nullable)
+  address: text("address"), // Address (nullable)
+  city: text("city"), // City (nullable)
+  country: text("country"), // Country (nullable)
+  phone: text("phone"), // Phone (nullable)
+  email: text("email"), // Email (nullable)
+  isActive: boolean("is_active").default(true).notNull(),
+  notes: text("notes"), // Notes (nullable)
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertOrganizationSchema = createInsertSchema(organizations).omit(
+  {
+    id: true,
+    createdAt: true,
+    updatedAt: true,
+  },
+);
+
+export type Organization = typeof organizations.$inferSelect;
+export type InsertOrganization = z.infer<typeof insertOrganizationSchema>;
+
+// Contact Type Enum
+export const ContactType = {
+  DRIVER: "DRIVER",
+  STAFF: "STAFF",
+  MANAGER: "MANAGER",
+  CUSTOMER_SERVICE: "CUSTOMER_SERVICE",
+  SALES: "SALES",
+  ACCOUNTANT: "ACCOUNTANT",
+  OTHER: "OTHER",
+} as const;
+
+export type ContactTypeType =
+  (typeof ContactType)[keyof typeof ContactType];
+
+// Contacts Table
+export const contacts = pgTable("contacts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .references(() => users.id, { onDelete: "set null" }), // Nullable, unique constraint handled in service
+  nameEn: text("name_en").notNull(), // English name
+  nameAr: text("name_ar").notNull(), // Arabic name
+  contactType: text("contact_type", {
+    enum: [
+      "DRIVER",
+      "STAFF",
+      "MANAGER",
+      "CUSTOMER_SERVICE",
+      "SALES",
+      "ACCOUNTANT",
+      "OTHER",
+    ],
+  }).notNull(),
+  mobile: text("mobile"), // Mobile (nullable)
+  email: text("email"), // Email (nullable)
+  nationality: text("nationality"), // Nationality (nullable)
+  isActive: boolean("is_active").default(true).notNull(),
+  notes: text("notes"), // Notes (nullable)
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertContactSchema = createInsertSchema(contacts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type Contact = typeof contacts.$inferSelect;
+export type InsertContact = z.infer<typeof insertContactSchema>;

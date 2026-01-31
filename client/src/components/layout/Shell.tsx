@@ -9,7 +9,10 @@ import {
   ShieldCheck,
   Settings,
   ChevronDown,
-  Users as UsersIcon
+  Users as UsersIcon,
+  Handshake,
+  Building2,
+  UserCircle
 } from "lucide-react";
 import { useState } from "react";
 import {
@@ -39,6 +42,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       return [
         { href: "/admin/home", label: t("navigation.dashboard"), icon: LayoutDashboard },
         { href: "/admin/users", label: t("navigation.users"), icon: UsersIcon },
+        { href: "/admin/partners", label: t("navigation.partners"), icon: Handshake },
+        { href: "/admin/company", label: t("navigation.company"), icon: Building2 },
+        { href: "/admin/contacts", label: t("navigation.contacts"), icon: UserCircle },
         { href: "/admin/drivers", label: t("navigation.drivers"), icon: Truck }, // Placeholder
         { href: "/admin/settings", label: t("navigation.settings"), icon: Settings }, // Placeholder
       ];

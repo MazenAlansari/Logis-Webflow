@@ -1,0 +1,67 @@
+[
+  {
+    "nameEn": "ABC Trading Company",
+    "nameAr": "شركة ABC للتجارة",
+    "taxId": "1234567890",
+    "registrationNumber": "CR-2020-001234",
+    "address": "King Fahd Road, Building 123",
+    "city": "Riyadh",
+    "country": "Saudi Arabia",
+    "phone": "+966501234567",
+    "email": "contact@abctrading.com",
+    "notes": "Regular customer, monthly shipments to Jeddah",
+    "isActive": true
+  },
+  {
+    "nameEn": "XYZ Logistics Services",
+    "nameAr": "خدمات XYZ اللوجستية",
+    "taxId": "9876543210",
+    "registrationNumber": "CR-2019-005678",
+    "address": "Al Olaya Street, Tower A, Floor 5",
+    "city": "Riyadh",
+    "country": "Saudi Arabia",
+    "phone": "+966502345678",
+    "email": "info@xyzlogistics.com",
+    "notes": "Vendor providing fleet services and drivers",
+    "isActive": true
+  },
+  {
+    "nameEn": "Gulf Distribution Co.",
+    "nameAr": "شركة الخليج للتوزيع",
+    "taxId": "5555555555",
+    "registrationNumber": "CR-2021-009876",
+    "address": "Industrial Area, Warehouse 45",
+    "city": "Jeddah",
+    "country": "Saudi Arabia",
+    "phone": "+966503456789",
+    "email": "sales@gulfdist.com",
+    "notes": "Large customer, requires temperature-controlled transport",
+    "isActive": true
+  },
+  {
+    "nameEn": "Al-Noor Transport",
+    "nameAr": "النور للنقل",
+    "taxId": "4444444444",
+    "registrationNumber": "CR-2018-003456",
+    "address": "Dammam Highway, Km 15",
+    "city": "Dammam",
+    "country": "Saudi Arabia",
+    "phone": "+966504567890",
+    "email": "operations@alnoor-transport.com",
+    "notes": "Partner vendor, provides trucks and drivers for long-distance routes",
+    "isActive": true
+  },
+  {
+    "nameEn": "Modern Retail Group",
+    "nameAr": "مجموعة التجزئة الحديثة",
+    "taxId": "3333333333",
+    "registrationNumber": "CR-2022-001111",
+    "address": "Prince Sultan Road, Mall Complex",
+    "city": "Riyadh",
+    "country": "Saudi Arabia",
+    "phone": "+966505678901",
+    "email": "logistics@modernretail.com",
+    "notes": "Customer with multiple store locations, daily deliveries required",
+    "isActive": false
+  }
+]

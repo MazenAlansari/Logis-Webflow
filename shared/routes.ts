@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { insertUserSchema, users, loginSchema, changePasswordSchema } from "./schema";
+import { insertUserSchema, users, loginSchema, changePasswordSchema, organizations, contacts } from "./schema";
 import { createPaginatedResponseSchema, paginationMetaSchema } from "./types/pagination";
 
 export const errorSchemas = {
@@ -11,6 +11,9 @@ export const errorSchemas = {
     message: z.string(),
   }),
   notFound: z.object({
+    message: z.string(),
+  }),
+  conflict: z.object({
     message: z.string(),
   }),
   internal: z.object({
@@ -219,6 +222,277 @@ export const api = {
             userId: z.string().uuid(),
             tempPassword: z.string(),
           }),
+          401: errorSchemas.unauthorized,
+          403: errorSchemas.unauthorized,
+          404: errorSchemas.notFound,
+        },
+      },
+    },
+    partners: {
+      list: {
+        method: "GET" as const,
+        path: "/api/admin/partners",
+        responses: {
+          200: z.array(z.custom<typeof organizations.$inferSelect>()),
+          401: errorSchemas.unauthorized,
+          403: errorSchemas.unauthorized,
+        },
+      },
+      listPaginated: {
+        method: "GET" as const,
+        path: "/api/admin/partners/paginated",
+        responses: {
+          200: createPaginatedResponseSchema(
+            z.custom<typeof organizations.$inferSelect>()
+          ),
+          400: errorSchemas.validation,
+          401: errorSchemas.unauthorized,
+          403: errorSchemas.unauthorized,
+        },
+      },
+      get: {
+        method: "GET" as const,
+        path: "/api/admin/partners/:id",
+        responses: {
+          200: z.custom<typeof organizations.$inferSelect>(),
+          401: errorSchemas.unauthorized,
+          403: errorSchemas.unauthorized,
+          404: errorSchemas.notFound,
+        },
+      },
+      create: {
+        method: "POST" as const,
+        path: "/api/admin/partners",
+        input: z.object({
+          nameEn: z.string().min(1),
+          nameAr: z.string().min(1),
+          taxId: z.string().optional(),
+          registrationNumber: z.string().optional(),
+          address: z.string().optional(),
+          city: z.string().optional(),
+          country: z.string().optional(),
+          phone: z.string().optional(),
+          email: z.string().email().optional().or(z.literal("")),
+          notes: z.string().optional(),
+        }),
+        responses: {
+          201: z.custom<typeof organizations.$inferSelect>(),
+          400: errorSchemas.validation,
+          401: errorSchemas.unauthorized,
+          403: errorSchemas.unauthorized,
+        },
+      },
+      update: {
+        method: "PATCH" as const,
+        path: "/api/admin/partners/:id",
+        input: z.object({
+          nameEn: z.string().min(1).optional(),
+          nameAr: z.string().min(1).optional(),
+          taxId: z.string().optional(),
+          registrationNumber: z.string().optional(),
+          address: z.string().optional(),
+          city: z.string().optional(),
+          country: z.string().optional(),
+          phone: z.string().optional(),
+          email: z.string().email().optional().or(z.literal("")),
+          notes: z.string().optional(),
+        }),
+        responses: {
+          200: z.custom<typeof organizations.$inferSelect>(),
+          400: errorSchemas.validation,
+          401: errorSchemas.unauthorized,
+          403: errorSchemas.unauthorized,
+          404: errorSchemas.notFound,
+        },
+      },
+      activate: {
+        method: "PATCH" as const,
+        path: "/api/admin/partners/:id/activate",
+        responses: {
+          200: z.custom<typeof organizations.$inferSelect>(),
+          401: errorSchemas.unauthorized,
+          403: errorSchemas.unauthorized,
+          404: errorSchemas.notFound,
+        },
+      },
+      deactivate: {
+        method: "PATCH" as const,
+        path: "/api/admin/partners/:id/deactivate",
+        responses: {
+          200: z.custom<typeof organizations.$inferSelect>(),
+          401: errorSchemas.unauthorized,
+          403: errorSchemas.unauthorized,
+          404: errorSchemas.notFound,
+        },
+      },
+      delete: {
+        method: "DELETE" as const,
+        path: "/api/admin/partners/:id",
+        responses: {
+          200: z.object({ message: z.string() }),
+          401: errorSchemas.unauthorized,
+          403: errorSchemas.unauthorized,
+          404: errorSchemas.notFound,
+        },
+      },
+    },
+    company: {
+      get: {
+        method: "GET" as const,
+        path: "/api/admin/company",
+        responses: {
+          200: z.custom<typeof organizations.$inferSelect>(),
+          401: errorSchemas.unauthorized,
+          403: errorSchemas.unauthorized,
+          404: errorSchemas.notFound,
+        },
+      },
+      create: {
+        method: "POST" as const,
+        path: "/api/admin/company",
+        input: z.object({
+          nameEn: z.string().min(1),
+          nameAr: z.string().min(1),
+          taxId: z.string().optional(),
+          registrationNumber: z.string().optional(),
+          address: z.string().optional(),
+          city: z.string().optional(),
+          country: z.string().optional(),
+          phone: z.string().optional(),
+          email: z.string().email().optional().or(z.literal("")),
+          notes: z.string().optional(),
+        }),
+        responses: {
+          201: z.custom<typeof organizations.$inferSelect>(),
+          400: errorSchemas.validation,
+          401: errorSchemas.unauthorized,
+          403: errorSchemas.unauthorized,
+          409: errorSchemas.conflict,
+        },
+      },
+      update: {
+        method: "PATCH" as const,
+        path: "/api/admin/company",
+        input: z.object({
+          nameEn: z.string().min(1).optional(),
+          nameAr: z.string().min(1).optional(),
+          taxId: z.string().optional(),
+          registrationNumber: z.string().optional(),
+          address: z.string().optional(),
+          city: z.string().optional(),
+          country: z.string().optional(),
+          phone: z.string().optional(),
+          email: z.string().email().optional().or(z.literal("")),
+          notes: z.string().optional(),
+        }),
+        responses: {
+          200: z.custom<typeof organizations.$inferSelect>(),
+          400: errorSchemas.validation,
+          401: errorSchemas.unauthorized,
+          403: errorSchemas.unauthorized,
+          404: errorSchemas.notFound,
+        },
+      },
+    },
+    contacts: {
+      listPaginated: {
+        method: "GET" as const,
+        path: "/api/admin/contacts/paginated",
+        responses: {
+          200: createPaginatedResponseSchema(
+            z.custom<typeof contacts.$inferSelect>()
+          ),
+          400: errorSchemas.validation,
+          401: errorSchemas.unauthorized,
+          403: errorSchemas.unauthorized,
+        },
+      },
+      get: {
+        method: "GET" as const,
+        path: "/api/admin/contacts/:id",
+        responses: {
+          200: z.custom<typeof contacts.$inferSelect>(),
+          401: errorSchemas.unauthorized,
+          403: errorSchemas.unauthorized,
+          404: errorSchemas.notFound,
+        },
+      },
+      create: {
+        method: "POST" as const,
+        path: "/api/admin/contacts",
+        input: z.object({
+          organizationId: z.string().uuid(),
+          userId: z.string().uuid().optional(),
+          nameEn: z.string().min(1),
+          nameAr: z.string().min(1),
+          contactType: z.enum([
+            "DRIVER",
+            "STAFF",
+            "MANAGER",
+            "CUSTOMER_SERVICE",
+            "SALES",
+            "ACCOUNTANT",
+            "OTHER",
+          ]),
+          mobile: z.string().optional(),
+          email: z.string().email().optional().or(z.literal("")),
+          nationality: z.string().optional(),
+          notes: z.string().optional(),
+        }),
+        responses: {
+          201: z.custom<typeof contacts.$inferSelect>(),
+          400: errorSchemas.validation,
+          401: errorSchemas.unauthorized,
+          403: errorSchemas.unauthorized,
+        },
+      },
+      update: {
+        method: "PATCH" as const,
+        path: "/api/admin/contacts/:id",
+        input: z.object({
+          organizationId: z.string().uuid().optional(),
+          userId: z.string().uuid().optional().nullable(),
+          nameEn: z.string().min(1).optional(),
+          nameAr: z.string().min(1).optional(),
+          contactType: z
+            .enum([
+              "DRIVER",
+              "STAFF",
+              "MANAGER",
+              "CUSTOMER_SERVICE",
+              "SALES",
+              "ACCOUNTANT",
+              "OTHER",
+            ])
+            .optional(),
+          mobile: z.string().optional(),
+          email: z.string().email().optional().or(z.literal("")),
+          nationality: z.string().optional(),
+          notes: z.string().optional(),
+        }),
+        responses: {
+          200: z.custom<typeof contacts.$inferSelect>(),
+          400: errorSchemas.validation,
+          401: errorSchemas.unauthorized,
+          403: errorSchemas.unauthorized,
+          404: errorSchemas.notFound,
+        },
+      },
+      activate: {
+        method: "PATCH" as const,
+        path: "/api/admin/contacts/:id/activate",
+        responses: {
+          200: z.custom<typeof contacts.$inferSelect>(),
+          401: errorSchemas.unauthorized,
+          403: errorSchemas.unauthorized,
+          404: errorSchemas.notFound,
+        },
+      },
+      deactivate: {
+        method: "PATCH" as const,
+        path: "/api/admin/contacts/:id/deactivate",
+        responses: {
+          200: z.custom<typeof contacts.$inferSelect>(),
           401: errorSchemas.unauthorized,
           403: errorSchemas.unauthorized,
           404: errorSchemas.notFound,

@@ -10,6 +10,10 @@ import "@/lib/i18n"; // Initialize i18n
 import AuthPage from "@/pages/auth-page";
 import AdminHome from "@/pages/admin-home";
 import AdminUsers from "@/pages/admin-users";
+import AdminPartners from "@/pages/admin-partners";
+import AdminCompany from "@/pages/admin-company";
+import AdminContacts from "@/pages/admin-contacts";
+import AdminDrivers from "@/pages/admin-drivers";
 import DriverHome from "@/pages/driver-home";
 import Profile from "@/pages/profile";
 import ChangePassword from "@/pages/change-password";
@@ -79,6 +83,18 @@ function Router() {
       </Route>
       <Route path="/admin/users">
         <ProtectedRoute component={AdminUsers} allowedRoles={["ADMIN"]} />
+      </Route>
+      <Route path="/admin/partners">
+        <ProtectedRoute component={AdminPartners} allowedRoles={["ADMIN"]} />
+      </Route>
+      <Route path="/admin/company">
+        <ProtectedRoute component={AdminCompany} allowedRoles={["ADMIN"]} />
+      </Route>
+      <Route path="/admin/contacts">
+        <ProtectedRoute component={AdminContacts} allowedRoles={["ADMIN"]} />
+      </Route>
+      <Route path="/admin/drivers">
+        <ProtectedRoute component={AdminDrivers} allowedRoles={["ADMIN"]} />
       </Route>
       <Route path="/driver/home">
         <ProtectedRoute component={DriverHome} allowedRoles={["DRIVER"]} />
