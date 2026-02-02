@@ -229,6 +229,7 @@ export default function AdminDrivers() {
                         <TableHead>Mobile</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Nationality</TableHead>
+                        <TableHead>Government ID</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
@@ -246,6 +247,7 @@ export default function AdminDrivers() {
                           <TableCell>{driver.mobile || "-"}</TableCell>
                           <TableCell>{driver.email || "-"}</TableCell>
                           <TableCell>{driver.nationality || "-"}</TableCell>
+                          <TableCell>{driver.govId || "-"}</TableCell>
                           <TableCell>
                             <Badge
                               variant={driver.isActive ? "default" : "secondary"}

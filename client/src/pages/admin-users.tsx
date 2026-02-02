@@ -53,6 +53,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useForm } from "react-hook-form";
@@ -71,26 +72,32 @@ import {
   fetchUsersPaginated,
   createUser,
   updateUser,
+  updateUserEmail,
   resetPassword,
   sendWelcomeEmail,
+  fetchAvailableContacts,
   type UserDTO,
   type CreateUserRequest,
   type UpdateUserRequest,
+  type UpdateUserEmailRequest,
   type SendWelcomeEmailRequest,
+  type AvailableContactDTO,
 } from "@/api/adminUsers";
 import { usePagination } from "@/hooks/use-pagination";
 import { PaginationControls } from "@/components/pagination/PaginationControls";
 
 // Form schemas
 const createUserSchema = z.object({
+  contactId: z.string().uuid("Invalid contact").optional(),
   email: z.string().email("Invalid email address"),
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
+  fullNameAr: z.string().optional(),
+  mobile: z.string().optional(),
   role: z.enum(["ADMIN", "DRIVER"]).default("DRIVER"),
   isActive: z.boolean().default(true),
 });
 
 const updateUserSchema = z.object({
-  fullName: z.string().min(2, "Full name must be at least 2 characters"),
   role: z.enum(["ADMIN", "DRIVER"]),
   isActive: z.boolean(),
 });
@@ -177,15 +184,79 @@ function CreateUserModal({
   onUserCreated?: (userId: string, tempPassword: string) => void;
 }) {
   const { toast } = useToast();
+  const [selectedContactId, setSelectedContactId] = useState<string>("");
+  const [contactValidationError, setContactValidationError] = useState<string>("");
+
+  // Fetch available contacts
+  const { data: availableContacts = [], isLoading: contactsLoading } = useQuery<AvailableContactDTO[]>({
+    queryKey: ["availableContacts"],
+    queryFn: fetchAvailableContacts,
+    enabled: open,
+  });
+
   const form = useForm<CreateUserForm>({
     resolver: zodResolver(createUserSchema),
     defaultValues: {
+      contactId: "",
       email: "",
       fullName: "",
+      fullNameAr: "",
+      mobile: "",
       role: "DRIVER",
       isActive: true,
     },
   });
+
+  // Reset form when modal opens/closes
+  useEffect(() => {
+    if (!open) {
+      form.reset();
+      setSelectedContactId("");
+      setContactValidationError("");
+    }
+  }, [open, form]);
+
+  // Handle contact selection
+  const handleContactSelect = (contactId: string) => {
+    setSelectedContactId(contactId);
+    setContactValidationError("");
+    
+    // If contactId is empty or undefined, clear form fields (for manual entry)
+    if (!contactId || contactId === "") {
+      form.setValue("contactId", undefined);
+      form.setValue("email", "");
+      form.setValue("fullName", "");
+      form.setValue("fullNameAr", "");
+      form.setValue("mobile", "");
+      return;
+    }
+
+    const contact = availableContacts.find((c) => c.id === contactId);
+    if (!contact) return;
+
+    // Validate contact has all required fields
+    const missingFields: string[] = [];
+    if (!contact.email) missingFields.push("Email");
+    if (!contact.nameEn) missingFields.push("English Name");
+    if (!contact.nameAr) missingFields.push("Arabic Name");
+    if (!contact.mobile) missingFields.push("Mobile");
+    if (!contact.govId) missingFields.push("Government ID");
+
+    if (missingFields.length > 0) {
+      setContactValidationError(
+        `Contact is missing required fields: ${missingFields.join(", ")}. Please update the contact first.`
+      );
+      form.setValue("contactId", "");
+      return;
+    }
+
+    // Auto-populate from contact
+    form.setValue("contactId", contactId);
+    form.setValue("email", contact.email || "");
+    form.setValue("fullName", contact.nameEn);
+    form.setValue("fullNameAr", contact.nameAr);
+    form.setValue("mobile", contact.mobile || "");
+  };
 
   const createMutation = useMutation({
     mutationFn: (data: CreateUserRequest) => createUser(data),
@@ -227,12 +298,39 @@ function CreateUserModal({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* Contact Selection */}
+            <div className="space-y-2">
+              <Label>Select Contact (Optional)</Label>
+              <Select
+                value={selectedContactId || undefined}
+                onValueChange={handleContactSelect}
+                disabled={contactsLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={contactsLoading ? "Loading contacts..." : "Select a contact to auto-fill (optional)"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableContacts.map((contact) => (
+                    <SelectItem key={contact.id} value={contact.id}>
+                      {contact.nameEn} {contact.email ? `(${contact.email})` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {contactValidationError && (
+                <p className="text-sm text-destructive mt-1">{contactValidationError}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Select a contact to automatically fill user information. Contact must have email, name (EN/AR), mobile, and government ID. Leave empty to create manually.
+              </p>
+            </div>
+
             <FormField
               control={form.control}
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>Email *</FormLabel>
                   <FormControl>
                     <Input type="email" placeholder="user@example.com" {...field} />
                   </FormControl>
@@ -240,14 +338,42 @@ function CreateUserModal({
                 </FormItem>
               )}
             />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="fullName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name (EN) *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="John Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="fullNameAr"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name (AR)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="جون دو" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <FormField
               control={form.control}
-              name="fullName"
+              name="mobile"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Full Name</FormLabel>
+                  <FormLabel>Mobile</FormLabel>
                   <FormControl>
-                    <Input placeholder="John Doe" {...field} />
+                    <Input placeholder="0555123456" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -349,7 +475,7 @@ function ChangeEmailModal({
   }, [user, form]);
 
   const changeEmailMutation = useMutation({
-    mutationFn: (data: UpdateUserRequest) => updateUser(user!.id, data),
+    mutationFn: (data: UpdateUserEmailRequest) => updateUserEmail(user!.id, data),
     onSuccess: () => {
       toast({
         title: "Email updated",
@@ -436,7 +562,6 @@ function EditUserModal({
   const form = useForm<UpdateUserForm>({
     resolver: zodResolver(updateUserSchema),
     defaultValues: {
-      fullName: user?.fullName || "",
       role: user?.role || "DRIVER",
       isActive: user?.isActive ?? true,
     },
@@ -446,7 +571,6 @@ function EditUserModal({
   useEffect(() => {
     if (user) {
       form.reset({
-        fullName: user.fullName,
         role: user.role,
         isActive: user.isActive,
       });
@@ -490,25 +614,25 @@ function EditUserModal({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="fullName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Full Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="John Doe" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Read-only user information */}
+            <div className="space-y-2">
+              <Label>Full Name</Label>
+              <Input value={user.fullName} disabled className="bg-muted" />
+            </div>
+            {user.fullNameAr && (
+              <div className="space-y-2">
+                <Label>Full Name (AR)</Label>
+                <Input value={user.fullNameAr} disabled className="bg-muted" />
+              </div>
+            )}
+            
+            {/* Editable fields */}
             <FormField
               control={form.control}
               name="role"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Role</FormLabel>
+                  <FormLabel>Role *</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value}

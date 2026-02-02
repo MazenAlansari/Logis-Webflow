@@ -6,6 +6,8 @@ export type UserDTO = {
   id: string;
   username: string;
   fullName: string;
+  fullNameAr: string | null;
+  mobile: string | null;
   role: "ADMIN" | "DRIVER";
   isActive: boolean;
   mustChangePassword: boolean;
@@ -17,6 +19,9 @@ export type UserDTO = {
 export type CreateUserRequest = {
   email: string;
   fullName: string;
+  fullNameAr?: string;
+  mobile?: string;
+  contactId?: string;
   role?: "ADMIN" | "DRIVER";
   isActive?: boolean;
 };
@@ -27,9 +32,14 @@ export type CreateUserResponse = UserDTO & {
 
 export type UpdateUserRequest = {
   fullName?: string;
+  fullNameAr?: string;
+  mobile?: string;
   role?: "ADMIN" | "DRIVER";
   isActive?: boolean;
-  email?: string;
+};
+
+export type UpdateUserEmailRequest = {
+  email: string;
 };
 
 export type ResetPasswordResponse = {
@@ -103,6 +113,14 @@ export async function updateUser(userId: string, data: UpdateUserRequest): Promi
 }
 
 /**
+ * Update user email (separate endpoint for security)
+ */
+export async function updateUserEmail(userId: string, data: UpdateUserEmailRequest): Promise<UserDTO> {
+  const res = await apiRequest("PATCH", `/api/admin/users/${userId}/email`, data);
+  return res.json();
+}
+
+/**
  * Reset user password
  */
 export async function resetPassword(userId: string): Promise<ResetPasswordResponse> {
@@ -127,3 +145,22 @@ export async function sendWelcomeEmail(data: SendWelcomeEmailRequest): Promise<S
   return res.json();
 }
 
+// Available contact type (for user creation)
+export type AvailableContactDTO = {
+  id: string;
+  nameEn: string;
+  nameAr: string;
+  email: string | null;
+  mobile: string | null;
+  govId: string | null;
+  contactType: string;
+  organizationId: string;
+};
+
+/**
+ * Fetch contacts without linked users (for user creation)
+ */
+export async function fetchAvailableContacts(): Promise<AvailableContactDTO[]> {
+  const res = await apiRequest("GET", "/api/admin/users/contacts/available");
+  return res.json();
+}

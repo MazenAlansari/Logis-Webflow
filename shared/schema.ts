@@ -15,6 +15,8 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(), // email
   password: text("password").notNull(),
   fullName: text("full_name").notNull(),
+  fullNameAr: text("full_name_ar"), // Arabic full name (nullable)
+  mobile: text("mobile"), // Mobile number (nullable)
   role: text("role", { enum: ["ADMIN", "DRIVER"] }).notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   mustChangePassword: boolean("must_change_password").default(true).notNull(),
@@ -134,6 +136,7 @@ export const contacts = pgTable("contacts", {
   mobile: text("mobile"), // Mobile (nullable)
   email: text("email"), // Email (nullable)
   nationality: text("nationality"), // Nationality (nullable)
+  govId: text("gov_id"), // Government ID - 10 digits (nullable)
   isActive: boolean("is_active").default(true).notNull(),
   notes: text("notes"), // Notes (nullable)
   createdAt: timestamp("created_at").defaultNow().notNull(),

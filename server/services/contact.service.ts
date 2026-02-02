@@ -35,6 +35,11 @@ export const createContactSchema = z.object({
   mobile: z.string().optional(),
   email: z.string().email("Invalid email address").optional().or(z.literal("")),
   nationality: z.string().optional(),
+  govId: z
+    .string()
+    .regex(/^\d{10}$/, "Government ID must be exactly 10 digits")
+    .optional()
+    .or(z.literal("")),
   notes: z.string().optional(),
 });
 
@@ -57,6 +62,11 @@ export const updateContactSchema = z.object({
   mobile: z.string().optional(),
   email: z.string().email("Invalid email address").optional().or(z.literal("")),
   nationality: z.string().optional(),
+  govId: z
+    .string()
+    .regex(/^\d{10}$/, "Government ID must be exactly 10 digits")
+    .optional()
+    .or(z.literal("")),
   notes: z.string().optional(),
 }).refine((data) => Object.keys(data).length > 0, {
   message: "At least one field must be provided for update",
@@ -259,6 +269,7 @@ export async function createContact(data: CreateContactRequest) {
       mobile: validatedData.mobile || null,
       email: validatedData.email || null,
       nationality: validatedData.nationality || null,
+      govId: validatedData.govId || null,
       notes: validatedData.notes || null,
       isActive: true,
     })
@@ -313,6 +324,9 @@ export async function updateContact(id: string, data: UpdateContactRequest) {
     }),
     ...(validatedData.nationality !== undefined && {
       nationality: validatedData.nationality || null,
+    }),
+    ...(validatedData.govId !== undefined && {
+      govId: validatedData.govId || null,
     }),
     ...(validatedData.notes !== undefined && {
       notes: validatedData.notes || null,

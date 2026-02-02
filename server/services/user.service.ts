@@ -1,8 +1,8 @@
 import bcrypt from "bcryptjs";
 import { storage } from "../storage";
 import { db } from "../config/database";
-import { users } from "@shared/schema";
-import { eq, desc, asc, count, sql } from "drizzle-orm";
+import { users, contacts } from "@shared/schema";
+import { eq, desc, asc, count, sql, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { generateAndSendVerificationToken } from "./emailVerification.service";
 import type { PaginatedResponse } from "@shared/types/pagination";
@@ -17,21 +17,31 @@ import { buildPaginationMeta, getOffset } from "../utils/pagination";
 export const createUserSchema = z.object({
   email: z.string().email("Invalid email address"),
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
+  fullNameAr: z.string().optional(),
+  mobile: z.string().optional(),
+  contactId: z.string().uuid("Invalid contact ID").optional(),
   role: z.enum(["ADMIN", "DRIVER"]).default("DRIVER"),
   isActive: z.boolean().default(true),
 });
 
 export const updateUserSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters").optional(),
+  fullNameAr: z.string().optional(),
+  mobile: z.string().optional(),
   role: z.enum(["ADMIN", "DRIVER"]).optional(),
   isActive: z.boolean().optional(),
-  email: z.string().email("Invalid email address").optional(),
 }).refine((data) => Object.keys(data).length > 0, {
   message: "At least one field must be provided for update",
 });
 
+// Separate schema for email updates (requires verification flow)
+export const updateUserEmailSchema = z.object({
+  email: z.string().email("Invalid email address"),
+});
+
 export type CreateUserRequest = z.infer<typeof createUserSchema>;
 export type UpdateUserRequest = z.infer<typeof updateUserSchema>;
+export type UpdateUserEmailRequest = z.infer<typeof updateUserEmailSchema>;
 
 /**
  * Generate a secure temporary password
@@ -54,6 +64,8 @@ export async function getAllUsers() {
     id: users.id,
     username: users.username,
     fullName: users.fullName,
+    fullNameAr: users.fullNameAr,
+    mobile: users.mobile,
     role: users.role,
     isActive: users.isActive,
     mustChangePassword: users.mustChangePassword,
@@ -78,6 +90,8 @@ export async function getUsersPaginated(params: {
   id: string;
   username: string;
   fullName: string;
+  fullNameAr: string | null;
+  mobile: string | null;
   role: "ADMIN" | "DRIVER";
   isActive: boolean;
   mustChangePassword: boolean;
@@ -93,6 +107,8 @@ export async function getUsersPaginated(params: {
     id: users.id,
     username: users.username,
     fullName: users.fullName,
+    fullNameAr: users.fullNameAr,
+    mobile: users.mobile,
     role: users.role,
     isActive: users.isActive,
     mustChangePassword: users.mustChangePassword,
@@ -125,14 +141,96 @@ export async function getUsersPaginated(params: {
 }
 
 /**
+ * Get contacts without linked users
+ */
+export async function getContactsWithoutUsers() {
+  return db
+    .select({
+      id: contacts.id,
+      nameEn: contacts.nameEn,
+      nameAr: contacts.nameAr,
+      email: contacts.email,
+      mobile: contacts.mobile,
+      govId: contacts.govId,
+      contactType: contacts.contactType,
+      organizationId: contacts.organizationId,
+    })
+    .from(contacts)
+    .where(isNull(contacts.userId))
+    .orderBy(contacts.nameEn);
+}
+
+/**
+ * Validate contact has all required fields for user linking
+ * Required: email, nameEn, nameAr, mobile, govId
+ */
+export function validateContactForLinking(contact: {
+  email: string | null;
+  nameEn: string;
+  nameAr: string;
+  mobile: string | null;
+  govId: string | null;
+}): { valid: boolean; missingFields: string[] } {
+  const missingFields: string[] = [];
+  
+  if (!contact.email) missingFields.push("email");
+  if (!contact.nameEn) missingFields.push("nameEn");
+  if (!contact.nameAr) missingFields.push("nameAr");
+  if (!contact.mobile) missingFields.push("mobile");
+  if (!contact.govId) missingFields.push("govId");
+  
+  return {
+    valid: missingFields.length === 0,
+    missingFields,
+  };
+}
+
+/**
  * Create a new user
  * Returns user with temporary password
+ * If contactId is provided, validates contact and populates user fields from contact
  */
 export async function createUser(data: CreateUserRequest) {
   // Check if email already exists
   const existingUser = await storage.getUserByUsername(data.email);
   if (existingUser) {
     throw new Error("User with this email already exists");
+  }
+
+  let contactToLink = null;
+  
+  // If contactId is provided, validate and get contact
+  if (data.contactId) {
+    const [contact] = await db
+      .select()
+      .from(contacts)
+      .where(eq(contacts.id, data.contactId))
+      .limit(1);
+    
+    if (!contact) {
+      throw new Error("Contact not found");
+    }
+    
+    // Check if contact already has a user
+    if (contact.userId) {
+      throw new Error("Contact is already linked to a user");
+    }
+    
+    // Validate contact has all required fields
+    const validation = validateContactForLinking(contact);
+    if (!validation.valid) {
+      throw new Error(
+        `Contact is missing required fields: ${validation.missingFields.join(", ")}. Please update the contact first.`
+      );
+    }
+    
+    contactToLink = contact;
+    
+    // Override user data with contact data (contact is source of truth)
+    data.email = contact.email!;
+    data.fullName = contact.nameEn;
+    data.fullNameAr = contact.nameAr;
+    data.mobile = contact.mobile!;
   }
 
   // Generate secure temporary password
@@ -144,11 +242,21 @@ export async function createUser(data: CreateUserRequest) {
     username: data.email,
     password: hashedPassword,
     fullName: data.fullName,
+    fullNameAr: data.fullNameAr || null,
+    mobile: data.mobile || null,
     role: data.role || "DRIVER",
     isActive: data.isActive !== undefined ? data.isActive : true,
     mustChangePassword: true, // Always require password change on creation
     emailVerified: false, // Email must be verified
   });
+
+  // Link contact to user if contactId was provided
+  if (contactToLink) {
+    await db
+      .update(contacts)
+      .set({ userId: newUser.id })
+      .where(eq(contacts.id, contactToLink.id));
+  }
 
   // Generate and send verification token (non-blocking)
   try {
@@ -183,45 +291,60 @@ export async function updateUser(userId: string, data: UpdateUserRequest, curren
     throw new Error("You cannot deactivate your own account");
   }
 
+  // Update user (email updates are handled separately)
+  const updateData: any = {
+    ...(data.fullName && { fullName: data.fullName }),
+    ...(data.fullNameAr !== undefined && { fullNameAr: data.fullNameAr }),
+    ...(data.mobile !== undefined && { mobile: data.mobile }),
+    ...(data.role && { role: data.role }),
+    ...(data.isActive !== undefined && { isActive: data.isActive }),
+  };
+
+  const updatedUser = await storage.updateUser(userId, updateData);
+  return updatedUser;
+}
+
+/**
+ * Update user email
+ * Separate function for email updates with verification flow
+ */
+export async function updateUserEmail(userId: string, data: UpdateUserEmailRequest, currentUserId: string) {
+  // Check if user exists
+  const userToUpdate = await storage.getUser(userId);
+  if (!userToUpdate) {
+    throw new Error("User not found");
+  }
+
   // Prevent admin from editing their own email (to avoid lockout)
-  if (currentUserId === userId && data.email) {
+  if (currentUserId === userId) {
     throw new Error("You cannot change your own email address");
   }
 
-  // Check email uniqueness if email is being updated
-  if (data.email && data.email !== userToUpdate.username) {
+  // Check email uniqueness
+  if (data.email !== userToUpdate.username) {
     const existingUser = await storage.getUserByUsername(data.email);
     if (existingUser && existingUser.id !== userId) {
       throw new Error("User with this email already exists");
     }
   }
 
-  // Update user
+  // Update email
   const updateData: any = {
-    ...(data.fullName && { fullName: data.fullName }),
-    ...(data.role && { role: data.role }),
-    ...(data.isActive !== undefined && { isActive: data.isActive }),
-    ...(data.email && { username: data.email }),
+    username: data.email,
+    emailVerified: false, // Reset verification when email changes
   };
-
-  // If email is changed, reset email verification status
-  if (data.email && data.email !== userToUpdate.username) {
-    updateData.emailVerified = false;
-  }
 
   const updatedUser = await storage.updateUser(userId, updateData);
 
-  // If email was changed, generate and send verification token
-  if (data.email && data.email !== userToUpdate.username) {
-    try {
-      await generateAndSendVerificationToken(updatedUser);
-    } catch (error) {
-      // Log error but don't fail update
-      console.error(
-        `[UserService] Failed to send verification email for user ${updatedUser.id}:`,
-        error
-      );
-    }
+  // Generate and send verification token
+  try {
+    await generateAndSendVerificationToken(updatedUser);
+  } catch (error) {
+    // Log error but don't fail update
+    console.error(
+      `[UserService] Failed to send verification email for user ${updatedUser.id}:`,
+      error
+    );
   }
 
   return updatedUser;
@@ -262,6 +385,8 @@ export function getUserSafeFields(user: typeof users.$inferSelect) {
     id: user.id,
     username: user.username,
     fullName: user.fullName,
+    fullNameAr: user.fullNameAr,
+    mobile: user.mobile,
     role: user.role,
     isActive: user.isActive,
     mustChangePassword: user.mustChangePassword,

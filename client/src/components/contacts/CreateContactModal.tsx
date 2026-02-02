@@ -69,6 +69,11 @@ const createContactSchema = z.object({
   mobile: z.string().optional(),
   email: z.string().email("Invalid email address").optional().or(z.literal("")),
   nationality: z.string().optional(),
+  govId: z
+    .string()
+    .regex(/^\d{10}$/, "Government ID must be exactly 10 digits")
+    .optional()
+    .or(z.literal("")),
   notes: z.string().optional(),
 });
 
@@ -376,6 +381,29 @@ export function CreateContactModal({
                   <FormLabel>Nationality</FormLabel>
                   <FormControl>
                     <Input placeholder="Nationality" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="govId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Government ID</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="10 digits"
+                      maxLength={10}
+                      {...field}
+                      onChange={(e) => {
+                        // Only allow digits
+                        const value = e.target.value.replace(/\D/g, "");
+                        field.onChange(value);
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

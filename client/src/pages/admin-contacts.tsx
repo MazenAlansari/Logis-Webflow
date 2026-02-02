@@ -257,6 +257,7 @@ export default function AdminContacts() {
                         <TableHead>Mobile</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Nationality</TableHead>
+                        <TableHead>Government ID</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
@@ -279,6 +280,7 @@ export default function AdminContacts() {
                           <TableCell>{contact.mobile || "-"}</TableCell>
                           <TableCell>{contact.email || "-"}</TableCell>
                           <TableCell>{contact.nationality || "-"}</TableCell>
+                          <TableCell>{contact.govId || "-"}</TableCell>
                           <TableCell>
                             <Badge
                               variant={contact.isActive ? "default" : "secondary"}

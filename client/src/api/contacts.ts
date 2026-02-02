@@ -21,6 +21,7 @@ export type ContactDTO = {
   mobile: string | null;
   email: string | null;
   nationality: string | null;
+  govId: string | null;
   isActive: boolean;
   notes: string | null;
   createdAt: Date;
@@ -44,6 +45,7 @@ export type CreateContactRequest = {
   mobile?: string;
   email?: string;
   nationality?: string;
+  govId?: string;
   notes?: string;
 };
 
@@ -63,6 +65,7 @@ export type UpdateContactRequest = {
   mobile?: string;
   email?: string;
   nationality?: string;
+  govId?: string;
   notes?: string;
 };
 

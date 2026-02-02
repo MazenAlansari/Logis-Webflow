@@ -5,10 +5,13 @@ import {
   getUsersPaginated,
   createUser as createUserService,
   updateUser as updateUserService,
+  updateUserEmail as updateUserEmailService,
   resetUserPassword as resetUserPasswordService,
   getUserSafeFields,
   createUserSchema,
   updateUserSchema,
+  updateUserEmailSchema,
+  getContactsWithoutUsers,
 } from "../services/user.service";
 import { parsePaginationParams } from "../utils/pagination";
 
@@ -136,6 +139,61 @@ export async function resetUserPassword(req: Request, res: Response, next: NextF
   } catch (error) {
     if (error instanceof Error && error.message === "User not found") {
       return res.status(404).json({ message: error.message });
+    }
+    next(error);
+  }
+}
+
+/**
+ * GET /api/admin/users/contacts/available
+ * Get contacts without linked users (for user creation)
+ */
+export async function getAvailableContactsController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const contacts = await getContactsWithoutUsers();
+    res.status(200).json(contacts);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * PATCH /api/admin/users/:id/email
+ * Update user email (admin only, separate endpoint for security)
+ */
+export async function updateUserEmail(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = req.params.id;
+    const currentUserId = req.user!.id;
+
+    // Validate input
+    const validated = updateUserEmailSchema.parse(req.body);
+
+    // Update user email
+    const updatedUser = await updateUserEmailService(userId, validated, currentUserId);
+
+    res.status(200).json(getUserSafeFields(updatedUser));
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        message: "Validation error",
+        errors: error.errors,
+      });
+    }
+    if (error instanceof Error) {
+      if (error.message === "User not found") {
+        return res.status(404).json({ message: error.message });
+      }
+      if (error.message === "You cannot change your own email address") {
+        return res.status(400).json({ message: error.message });
+      }
+      if (error.message === "User with this email already exists") {
+        return res.status(409).json({ message: error.message });
+      }
     }
     next(error);
   }
