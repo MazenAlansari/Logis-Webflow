@@ -31,7 +31,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2 } from "lucide-react";
+import { Loader2, Info } from "lucide-react";
 import {
   updateContact,
   fetchPartners,
@@ -39,6 +39,7 @@ import {
   type ContactDTO,
   type UpdateContactRequest,
 } from "@/api/contacts";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { PartnerDTO } from "@/api/partners";
 import type { CompanyDTO } from "@/api/company";
 
@@ -200,8 +201,11 @@ export function EditContactModal({
       contactType: hideContactType && forceContactType ? forceContactType : data.contactType, // Use forceContactType if hidden
       nameEn: data.nameEn,
       nameAr: data.nameAr,
-      mobile: data.mobile || undefined,
-      email: data.email || undefined,
+      // Exclude email and mobile if contact is linked to a user (backend will reject anyway, but better UX)
+      ...(contact.userId ? {} : {
+        mobile: data.mobile || undefined,
+        email: data.email || undefined,
+      }),
       nationality: data.nationality || undefined,
       govId: data.govId || undefined,
       notes: data.notes || undefined,
@@ -354,6 +358,16 @@ export function EditContactModal({
               />
             )}
 
+            {/* Info message if contact is linked to a user */}
+            {contact.userId && (
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  This contact is linked to a user. Email and mobile must be updated via User Management to maintain data consistency.
+                </AlertDescription>
+              </Alert>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -362,7 +376,12 @@ export function EditContactModal({
                   <FormItem>
                     <FormLabel>Mobile</FormLabel>
                     <FormControl>
-                      <Input placeholder="Mobile" {...field} />
+                      <Input 
+                        placeholder="Mobile" 
+                        {...field} 
+                        disabled={!!contact.userId}
+                        className={contact.userId ? "bg-muted" : ""}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -375,7 +394,13 @@ export function EditContactModal({
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="email@example.com" {...field} />
+                      <Input 
+                        type="email" 
+                        placeholder="email@example.com" 
+                        {...field} 
+                        disabled={!!contact.userId}
+                        className={contact.userId ? "bg-muted" : ""}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

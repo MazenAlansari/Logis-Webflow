@@ -288,6 +288,21 @@ export async function updateContact(id: string, data: UpdateContactRequest) {
   // Validate input
   const validatedData = updateContactSchema.parse(data);
 
+  // Security: If contact is linked to a user, prevent email/mobile updates
+  // These fields should be updated via User Management to maintain data consistency
+  if (existingContact.userId) {
+    if (validatedData.email !== undefined) {
+      throw new Error(
+        "Cannot update email for a contact linked to a user. Please update via User Management."
+      );
+    }
+    if (validatedData.mobile !== undefined) {
+      throw new Error(
+        "Cannot update mobile for a contact linked to a user. Please update via User Management."
+      );
+    }
+  }
+
   // Validate organization if changed
   if (validatedData.organizationId) {
     await validateOrganization(validatedData.organizationId);
