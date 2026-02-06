@@ -65,7 +65,10 @@
     "settings": "Settings",
     "profile": "Profile",
     "logout": "Logout",
-    "home": "Home"
+    "home": "Home",
+    "userManagement": "User Management",
+    "organizations": "Organizations",
+    "configuration": "Configuration"
   },
   "admin": {
     "dashboard": {

@@ -65,7 +65,10 @@
     "settings": "الإعدادات",
     "profile": "الملف الشخصي",
     "logout": "تسجيل الخروج",
-    "home": "الرئيسية"
+    "home": "الرئيسية",
+    "userManagement": "إدارة المستخدمين",
+    "organizations": "المنظمات",
+    "configuration": "الإعدادات"
   },
   "admin": {
     "dashboard": {
